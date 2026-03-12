@@ -1,0 +1,30 @@
+.DS_Store
+
+# venv.md Quarto document
+venv_files
+venv.html
+
+# Code environnement
+.vscode
+.idea
+
+# Python
+**/__pycache__
+sandbox.py
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+**/*.ipynb
+
+# Large files
+*.png
+
+# Data files
+data
+saved_models
+# *.csv
+*.parquet
+yolov3*
+
+# Documentation
+build
