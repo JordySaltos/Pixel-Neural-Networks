@@ -1,0 +1,46 @@
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+
+# Transformation applied to each image
+# Converts images to PyTorch tensors
+transform = transforms.Compose([
+    transforms.ToTensor()
+])
+
+
+def get_loader(directory="./datasets",
+               batch_size=128,
+               train=True,
+               num_workers=1,
+               pin_memory=True):
+    """
+    Creates a DataLoader for the CIFAR10 dataset.
+
+    Args:
+        directory: path where the dataset is stored
+        batch_size: number of images per batch
+        train: whether to load the training or test set
+        num_workers: number of workers used for data loading
+        pin_memory: useful when training on GPU
+    """
+
+    dataset = datasets.CIFAR10(
+        root=directory,
+        train=train,
+        download=True,
+        transform=transform
+    )
+
+    # Shuffle training data
+    shuffle = train
+
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory
+    )
+
+    return loader
