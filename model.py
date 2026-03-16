@@ -127,3 +127,19 @@ class GatedPixelCNN(nn.Module):
         x = x.permute(0,1,3,4,2)
 
         return x
+    
+class PixelCNNAutoencoder(nn.Module): # encoder and decoder
+
+    def __init__(self):
+
+        super().__init__()
+
+        self.encoder = Encoder()
+
+        self.decoder = ConditionalPixelCNN()
+
+    def forward(self,x):
+
+        z = self.encoder(x)
+
+        out = self.decoder(x, z)
