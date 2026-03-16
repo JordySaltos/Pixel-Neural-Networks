@@ -6,321 +6,225 @@ different app modes.
 """
 
 import os
+from pathlib import Path
 
-import streamlit as st
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import mean_absolute_error
-from sklearn.model_selection import train_test_split
-from sklearn.tree import DecisionTreeRegressor
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.linear_model import LinearRegression
-from torchvision.datasets import MNIST
-from torchvision.transforms import ToTensor
+import numpy as np
+import streamlit as st
+import torch
+import torch.nn.functional as F
+from torchvision.utils import make_grid, save_image
 
-from viz import mnist_like_viz, training_curves
-from utils import poly, paths
-import dl
-
-
-def main():
-    """The main function of the app.
-
-    Calls the appropriate mode function, depending on the user's choice
-    in the sidebar. The mode function that can be called are
-    `regression`, `sinus`, `mnist_viz`, and `fashionmnist`.
-
-    Returns
-    -------
-    None
-    """
-    st.title("Some data manipulations")
-
-    home_data = get_data()
-
-    app_mode = st.sidebar.selectbox(
-        "Choose the app mode",
-        [
-            "Show instructions",
-            "Home data regression",
-            "Sinus regression",
-            "Show MNIST",
-            "Deep Learning",
-        ],
-    )  # , "Show the source code"])
-    if app_mode == "Show instructions":
-        st.write("To continue select a mode in the selection box to the left.")
-    # elif app_mode == "Show the source code":
-    #     st.code(get_file_content_as_string("./app.py"))
-    elif app_mode == "Home data regression":
-        regression(home_data)
-    elif app_mode == "Sinus regression":
-        sinus()
-    elif app_mode == "Show MNIST":
-        mnist()
-    elif app_mode == "Deep Learning":
-        fashionmnist()
+from Configuration import BaseConfig
+from Loader import get_loader
+from model import PixelCNN
+from train import Solver
 
 
-@st.cache_data
-def get_data():
-    """Loads the home training data.
-
-    Returns
-    -------
-    home_data: pd.DataFrame
-        The home training data.
-
-    Notes
-    -----
-    This is the dataset dowloaded from https://www.kaggle.com/competitions/home-data-for-ml-course/data.
-
-    """
-    iowa_file_path = "./home-data-for-ml-course/train.csv"
-    home_data = pd.read_csv(iowa_file_path)
-    return home_data
+# ── paths ────────────────────────────────────────────────────────────────────
+RESULTS_DIR = Path("results")
+WEIGHTS_FILENAME = "model_weights.pth"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-# def get_file_content_as_string(path):
-#     with open(path) as f:
-#         lines = f.read()
-#     return lines
+# ── helpers ───────────────────────────────────────────────────────────────────
 
-
-def regression(home_data):
-    """Performs regression on the home training data.
-
-    The dataset is split in a training and
-    a validation sets.
-    The user has the choice of which covariates to incoporate
-    in the model. Then a decision tree, a decision tree
-    with `max_leaf_nodes=100`, and a random forest are fitted
-    on the training set. Finally the validation mean
-    absolute errors are displayed.
-
-    Parameters
-    ----------
-    home_data: pd.DataFrame
-        The home training data. It can be any DataFrame except it needs
-        the columns `SalePrice`, `LotArea`, `YearBuilt`, `1stFlrSF`,
-        `2ndFlrSF`, `FullBath`, `BedroomAbvGr`, and `TotRmsAbvGrd`.
-
-    Returns
-    -------
-    None
-
-    """
-    # Create target object and call it y
-    y = home_data.SalePrice
-
-    features = [
-        "LotArea",
-        "YearBuilt",
-        "1stFlrSF",
-        "2ndFlrSF",
-        "FullBath",
-        "BedroomAbvGr",
-        "TotRmsAbvGrd",
-    ]
-    home_data_extracted = home_data[["SalePrice"] + features]
-
-    st.text(
-        "This is the head of the dataframe of Iowa house prices with many covariates"
+def find_latest_weights() -> Path | None:
+    """Return the path to model_weights.pth in the most recent results folder."""
+    if not RESULTS_DIR.exists():
+        return None
+    candidates = sorted(
+        [d / WEIGHTS_FILENAME for d in RESULTS_DIR.iterdir()
+         if d.is_dir() and (d / WEIGHTS_FILENAME).exists()]
     )
-    st.write(home_data_extracted.head())
+    return candidates[-1] if candidates else None
 
-    # Create X
-    covariates = st.multiselect(
-        "Select covariates to keep for regression:", features, features
+
+def find_sample_images() -> list[Path]:
+    """Return all epoch-*.png files from the most recent results folder, sorted."""
+    if not RESULTS_DIR.exists():
+        return []
+    folders = sorted([d for d in RESULTS_DIR.iterdir() if d.is_dir()])
+    if not folders:
+        return []
+    latest = folders[-1]
+    return sorted(latest.glob("epoch-*.png"))
+
+
+@st.cache_resource
+def load_model(weights_path: str) -> PixelCNN:
+    model = PixelCNN().to(DEVICE)
+    model.load_state_dict(torch.load(weights_path, map_location=DEVICE))
+    model.eval()
+    return model
+
+
+# ── training ──────────────────────────────────────────────────────────────────
+
+def run_training(n_epochs: int, batch_size: int):
+    """Runs Solver training inside the Streamlit app."""
+
+    config = BaseConfig().initialize(
+        parse=False,
+        mode="train",
+        n_epochs=n_epochs,
+        batch_size=batch_size,
+        optimizer="RMSprop",
+        dataset="CIFAR10",
+        log_interval=100,
+        save_interval=10,
     )
-    covariates.sort()
-    X = home_data[covariates]
 
-    # Split into validation and training data
-    train_X, val_X, train_y, val_y = train_test_split(X, y, random_state=1)
+    st.write(f"**Device:** {DEVICE}  |  **Results folder:** `{config.ckpt_dir}`")
 
-    dict_val_maes = {"method": [], "Val MAE": []}
+    train_loader = get_loader(config.dataset_dir, batch_size, train=True)
+    test_loader  = get_loader(config.dataset_dir, batch_size, train=False)
 
-    # Specify Model
-    iowa_model = DecisionTreeRegressor(random_state=1)
-    # Fit Model
-    iowa_model.fit(train_X, train_y)
-    # Make validation predictions and calculate mean absolute error
-    val_predictions = iowa_model.predict(val_X)
-    val_mae = mean_absolute_error(val_predictions, val_y)
-    dict_val_maes["method"].append("DecisionTreeRegressor")
-    dict_val_maes["Val MAE"].append(val_mae)
+    solver = Solver(config, train_loader, test_loader)
+    solver.build()
 
-    # Using best value for max_leaf_nodes
-    iowa_model = DecisionTreeRegressor(max_leaf_nodes=100, random_state=1)
-    iowa_model.fit(train_X, train_y)
-    val_predictions = iowa_model.predict(val_X)
-    val_mae = mean_absolute_error(val_predictions, val_y)
-    dict_val_maes["method"].append("DecisionTreeRegressor with max leaf nodes")
-    dict_val_maes["Val MAE"].append(val_mae)
+    progress = st.progress(0, text="Starting training…")
+    loss_placeholder = st.empty()
 
-    # Define the model. Set random_state to 1
-    rf_model = RandomForestRegressor(random_state=1)
-    rf_model.fit(train_X, train_y)
-    rf_val_predictions = rf_model.predict(val_X)
-    rf_val_mae = mean_absolute_error(rf_val_predictions, val_y)
-    dict_val_maes["method"].append("RandomForestRegressor")
-    dict_val_maes["Val MAE"].append(rf_val_mae)
+    for epoch in range(1, n_epochs + 1):
 
-    val_maes = pd.DataFrame(dict_val_maes).set_index("method")
-    st.write(val_maes)
-    st.text("(Test what happens when removing TotRmsAbvGrd)")
+        if epoch == 1:
+            solver.sample(epoch)
+
+        # ── train one epoch ──────────────────────────────────────────────
+        solver.model.train()
+        batch_losses = []
+        for images, _ in train_loader:
+            images = images.to(DEVICE)
+            logits = solver.model(images).contiguous().view(-1, 256)
+            targets = (images.view(-1) * 255).long()
+            loss = solver.criterion(logits, targets)
+            solver.optimizer.zero_grad()
+            loss.backward()
+            solver.optimizer.step()
+            batch_losses.append(float(loss.detach()))
+
+        epoch_loss = float(np.mean(batch_losses))
+        solver.train_losses.append(epoch_loss)
+
+        # ── test one epoch ───────────────────────────────────────────────
+        test_loss = solver.test(epoch)
+        solver.test_losses.append(test_loss)
+
+        # ── sample ───────────────────────────────────────────────────────
+        img_path = solver.sample(epoch)
+
+        # ── update UI ────────────────────────────────────────────────────
+        progress.progress(epoch / n_epochs, text=f"Epoch {epoch}/{n_epochs}")
+        loss_placeholder.write(
+            f"**Epoch {epoch}** — train loss: `{epoch_loss:.4f}` | "
+            f"test loss: `{test_loss:.4f}`"
+        )
+
+    # save weights
+    weights_path = str(config.ckpt_dir / WEIGHTS_FILENAME)
+    torch.save(solver.model.state_dict(), weights_path)
+    st.success(f"Training complete! Weights saved to `{weights_path}`")
+
+    # plot loss curves
+    _plot_losses(solver.train_losses, solver.test_losses)
+
+    return solver
 
 
-def sinus():
-    """A simple example of regression on the sinus function on the interval [0,5].
-
-    Some points are perturbed with noise after applying
-    the sinus function to them.
-    The user decides the number of noisy points with a slider,
-    and the maximum order for the polynomial regression. They
-    also decide if they want to fit two regression trees (with
-    `max_depth=2` and `max_depth=5`) in addition to the polynomial
-    regression. Then the fitted models are plotted along with
-    the training noisy data.
-
-    Returns
-    -------
-    None
-
-    """
-    noise = st.slider("Noise volume", 1, 10, 5, format="1 of each %d point(s)")
-    # Order of the polynom for the linear regression with polynom
-    order = st.slider(
-        "Choose the order of the polynom for the polynomial regression", 2, 20, 3
-    )
-    trees = st.checkbox("Show decision trees", True)
-
-    # Create a random dataset
-    rng = np.random.RandomState(1)
-    X = np.sort(5 * rng.rand(80, 1))
-    y = np.sin(X).ravel()
-    y[::noise] += 3 * (0.5 - rng.rand(y[::noise].size))
-    X2 = poly(X, order=order)
-
-    # Fit regression models
-    if trees:
-        regr_1 = DecisionTreeRegressor(max_depth=2, random_state=1)
-        regr_2 = DecisionTreeRegressor(max_depth=5, random_state=1)
-    regr_3 = LinearRegression()
-    if trees:
-        regr_1.fit(X, y)
-        regr_2.fit(X, y)
-    regr_3.fit(X2, y)
-
-    # Predict
-    X_test = np.arange(0.0, 5.0, 0.01)[:, np.newaxis]
-    X2_test = poly(X_test, order=order)
-    if trees:
-        y_1 = regr_1.predict(X_test)
-        y_2 = regr_2.predict(X_test)
-    y_3 = regr_3.predict(X2_test)
-
-    # Plot the results
-    fig = plt.figure()
-    plt.scatter(X, y, s=20, edgecolor="black", c="darkorange", label="data")
-    if trees:
-        plt.plot(X_test, y_1, color="cornflowerblue", label="max_depth=2", linewidth=2)
-        plt.plot(X_test, y_2, color="yellowgreen", label="max_depth=5", linewidth=2)
-    plt.plot(X_test, y_3, color="red", label="polynom", linewidth=2)
-    plt.xlabel("data")
-    plt.ylabel("target")
-    if trees:
-        plt.title("Decision Trees and Polynomial Regression")
-    else:
-        plt.title("Polynomial Regression")
-    plt.xlim(-0.2, 5.2)
-    plt.ylim(-2.7, 2.7)
-    plt.legend()
+def _plot_losses(train_losses, test_losses):
+    epochs = list(range(1, len(train_losses) + 1))
+    fig, ax = plt.subplots(figsize=(7, 3))
+    ax.plot(epochs, train_losses, marker="o", label="Train loss")
+    ax.plot(epochs[:len(test_losses)], test_losses, marker="s", label="Test loss")
+    ax.set_xlabel("Epoch")
+    ax.set_ylabel("Cross-entropy loss")
+    ax.set_title("Training curves")
+    ax.legend()
+    ax.grid(alpha=0.3)
+    plt.tight_layout()
     st.pyplot(fig)
 
 
-def mnist():
-    """Selects randomly 6 images from the training MNIST dataset and displays them.
+# ── sampling / results ────────────────────────────────────────────────────────
 
-    Returns
-    -------
-    None
+def show_results():
+    """Shows generated images saved during training and lets user generate new ones."""
 
-    """
-    train_data = MNIST("data", train=True, download=True, transform=ToTensor())
-    classes = list(range(10))
-    mnist_like_viz(train_data, classes)
+    weights_path = find_latest_weights()
+
+    if weights_path is None:
+        st.warning("No trained model found. Go to **Train model** first.")
+        return
+
+    st.write(f"Loaded weights from `{weights_path}`")
+    model = load_model(str(weights_path))
+
+    # ── images saved during training ─────────────────────────────────────
+    sample_files = find_sample_images()
+    if sample_files:
+        st.subheader("Images generated during training")
+        cols = st.columns(min(len(sample_files), 5))
+        for col, img_path in zip(cols, sample_files[-5:]):   # last 5 epochs
+            col.image(str(img_path), caption=img_path.stem, use_container_width=True)
+
+    # ── generate new images on demand ────────────────────────────────────
+    st.subheader("Generate new images")
+    n_images = st.slider("Number of images to generate", 1, 16, 4)
+
+    if st.button("Generate"):
+        with st.spinner("Sampling pixel-by-pixel… (this can take a while)"):
+            generated = _sample(model, n_images)
+
+        grid = make_grid(generated.cpu(), nrow=4, normalize=True, pad_value=1)
+        npimg = grid.numpy().transpose(1, 2, 0)
+
+        fig, ax = plt.subplots(figsize=(8, max(2, n_images // 4 * 2)))
+        ax.imshow(np.clip(npimg, 0, 1))
+        ax.axis("off")
+        ax.set_title("PixelCNN generated samples")
+        st.pyplot(fig)
 
 
-def fashionmnist():
-    """Training a simple MLP on the FashionMNIST dataset and displaying the metrics evolution during the training.
+def _sample(model: PixelCNN, n_images: int) -> torch.Tensor:
+    model.eval()
+    generated = torch.zeros(n_images, 3, 32, 32, device=DEVICE)
 
-    The user can decide the number of hidden layers of the MLP. They can also choose the number of epochs
-    for training. Once a model with given hyperparameters is trained, it is saved and used
-    again the next times without new training, unless the user clicks the button to delete
-    the saved model and train again. The MLP architecture is displayed.
-    Then 2 figures that are the evolution
-    of, respectively, the losses (train and test) and accuracies (train and test)
-    with respect to the epoch, are displayed. Finally 6 random images of the test dataset are
-    displayed, along with their ground truth and predicted labels.
+    with torch.no_grad():
+        for i in range(32):
+            for j in range(32):
+                output = model(generated)                   # [B, C, H, W, 256]
+                probs  = F.softmax(output[:, :, i, j], dim=2)  # [B, C, 256]
+                for ch in range(3):
+                    pixel = (
+                        torch.multinomial(probs[:, ch], 1).float() / 255.0
+                    ).squeeze(-1)
+                    generated[:, ch, i, j] = pixel
 
-    Returns
-    -------
-    None
+    return generated
 
-    Notes
-    -----
-    Inspired by https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html.
 
-    """
-    st.header("A simple deep learning model applied on the FashionMNIST dataset")
+# ── main ──────────────────────────────────────────────────────────────────────
 
-    hidden_layers = st.slider("Choose the number of hidden layers", 1, 5, 2)
+def main():
+    st.title("PixelCNN — CIFAR-10 image generation")
 
-    dropout_rate = st.slider("Choose the dropout rate", 0.0, 0.9, 0.0, 0.1)
-
-    epochs = st.slider("Choose the number of epochs to train", 1, 1000, 50)
-    st.write(
-        "Note that the epoch parameter is only relevant for training a new model, so if there is no already saved model for this config"
+    mode = st.sidebar.selectbox(
+        "Choose mode",
+        ["Train model", "View results"],
     )
 
-    if st.button("Delete saved model and train again"):
-        path_weights, path_metrics = paths(hidden_layers, dropout_rate)
-        try:
-            os.remove(path_weights)
-            os.remove(path_metrics)
-        except FileNotFoundError:
-            pass
+    if mode == "Train model":
+        st.header("Train a PixelCNN")
+        n_epochs   = st.slider("Number of epochs", 1, 50, 5)
+        batch_size = st.selectbox("Batch size", [4, 8, 16, 32], index=1)
 
-    train_dataloader, test_dataloader, _, test_data = dl.get_FashionMNIST_datasets(
-        64, only_loader=False
-    )
-    model = dl.get_and_train_model(
-        train_dataloader,
-        test_dataloader,
-        hidden_layers=hidden_layers,
-        dropout_rate=dropout_rate,
-        epochs=epochs,
-        mode="st",
-    )
+        if st.button("Start training"):
+            run_training(n_epochs, batch_size)
 
-    classes = [
-        "T-shirt/top",
-        "Trouser",
-        "Pullover",
-        "Dress",
-        "Coat",
-        "Sandal",
-        "Shirt",
-        "Sneaker",
-        "Bag",
-        "Ankle boot",
-    ]
-
-    training_curves(model, "st")
-    mnist_like_viz(test_data, classes, model)
+    elif mode == "View results":
+        st.header("Results")
+        show_results()
 
 
 if __name__ == "__main__":
