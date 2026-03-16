@@ -258,10 +258,10 @@ def main():
         batch_size = st.selectbox("Batch size", [8, 16, 32, 64], index=1)
 
         st.subheader("Model architecture")
-        h       = st.slider("h : bottleneck dimension",16, 32, 128, 256, step=32,
+        h       = st.slider("h : bottleneck dimension",16, 256, 128, step=16,
                             help="Controls the width of each residual block. "
                                  "Larger = more capacity but slower and heavier.")
-        n_block = st.slider("n_block : number of residual blocks", 4, 7, 12, 15,
+        n_block = st.slider("n_block : number of residual blocks", 4, 20, 15, 5,
                             help="Depth of the network. "
                                  "More blocks = larger receptive field.")
 
