@@ -97,3 +97,33 @@ class PixelRNN(nn.Module):
         x = x.permute(0, 1, 3, 4, 2)
 
         return x
+    
+class GatedPixelCNN(nn.Module):
+
+    def __init__(self, in_channels=3, channels=64, n_layers=12):
+        super().__init__()
+
+        self.input_conv = nn.Conv2d(in_channels, channels, 7, padding=3)
+
+        self.blocks = nn.ModuleList(
+            [GatedPixelCNNBlock(channels) for _ in range(n_layers)]
+        )
+
+        self.out = nn.Conv2d(channels, 3*256, 1)
+
+    def forward(self, x):
+
+        v = self.input_conv(x)
+        h = v.clone()
+
+        for block in self.blocks:
+            v, h = block(v, h)
+
+        x = self.out(h)
+
+        B,C,H,W = x.shape
+
+        x = x.view(B,3,256,H,W)
+        x = x.permute(0,1,3,4,2)
+
+        return x

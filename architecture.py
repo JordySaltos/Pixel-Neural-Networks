@@ -180,3 +180,74 @@ class ResidualRowLSTMBlock(nn.Module):
         x = self.conv1x1(x)
 
         return x + residual
+    
+class VerticalStack(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        super().__init__()
+
+        padding = kernel_size // 2
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2*out_channels,
+            kernel_size=(kernel_size, kernel_size),
+            padding=(padding, padding)
+        )
+
+        self.gate = GatedActivation()
+
+    def forward(self, x):
+
+        x = self.conv(x)
+        x = self.gate(x)
+
+        return x
+    
+class HorizontalStack(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        super().__init__()
+
+        padding = kernel_size // 2
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2*out_channels,
+            kernel_size=(1, kernel_size),
+            padding=(0, padding)
+        )
+
+        self.gate = GatedActivation()
+
+        self.v_to_h = nn.Conv2d(out_channels, 2*out_channels, 1)
+
+        self.residual = nn.Conv2d(out_channels, out_channels, 1)
+
+    def forward(self, h, v):
+
+        h_out = self.conv(h)
+
+        v_proj = self.v_to_h(v)
+
+        h_out = h_out + v_proj
+
+        h_out = self.gate(h_out)
+
+        return self.residual(h_out) + h
+    
+class GatedPixelCNNBlock(nn.Module):
+
+    def __init__(self, channels):
+        super().__init__()
+
+        self.vertical = VerticalStack(channels, channels)
+        self.horizontal = HorizontalStack(channels, channels)
+
+    def forward(self, v, h):
+
+        v_out = self.vertical(v)
+
+        h_out = self.horizontal(h, v_out)
+
+        return v_out, h_out
