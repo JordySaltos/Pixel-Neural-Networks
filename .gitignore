@@ -20,8 +20,9 @@ sandbox.py
 *.png
 
 # Data files
-data
-saved_models
+datasets
+results
+
 # *.csv
 *.parquet
 yolov3*
