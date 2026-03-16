@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torchvision.utils import save_image
 
 from model import PixelCNN
+from Loader import get_dataset_config
 
 
 class Solver(object):
@@ -31,9 +32,17 @@ class Solver(object):
 
     def build(self):
         """
-        Builds the PixelCNN model and initializes optimizer and loss function.
+        Builds the PixelCNN using architecture params from config,
+        then initializes optimizer and loss function.
         """
-        self.model = PixelCNN().to(self.device)
+        ds_cfg = get_dataset_config(self.config.dataset)
+        n_channel = ds_cfg["n_channel"]
+
+        self.model = PixelCNN(
+            n_channel=n_channel,
+            h=self.config.h,
+            n_block=self.config.n_block,
+        ).to(self.device)
         print(self.model, "\n")
 
         if self.config.mode == "train":
@@ -43,8 +52,7 @@ class Solver(object):
     def train(self):
         """
         Runs the full training loop across all epochs.
-        For each epoch it trains the network, evaluates it on the test set,
-        and generates sample images. Saves weights at the end.
+        Saves model weights to the checkpoint directory at the end.
         """
         for epoch in trange(self.config.n_epochs, desc="Epoch", ncols=80):
             epoch += 1
@@ -89,18 +97,14 @@ class Solver(object):
 
             self.sample(epoch)
 
-        # Save model weights after training finishes
         weights_path = str(self.config.ckpt_dir / "model_weights.pth")
         torch.save(self.model.state_dict(), weights_path)
         tqdm.write(f"Model saved to {weights_path}")
 
     def test(self, epoch):
-        """
-        Evaluates the model on the test set. Returns mean test loss.
-        """
+        """Evaluates the model on the test set. Returns mean test loss."""
         test_losses = []
         start_time = time.time()
-
         self.model.eval()
 
         with torch.no_grad():
@@ -128,16 +132,20 @@ class Solver(object):
 
         self.model.eval()
 
+        ds_cfg = get_dataset_config(self.config.dataset)
+        n_channel = ds_cfg["n_channel"]
+        img_size = ds_cfg["img_size"]   # always 32 after padding
+
         generated_images = torch.zeros(
-            self.config.batch_size, 3, 32, 32
+            self.config.batch_size, n_channel, img_size, img_size
         ).to(self.device)
 
         with torch.no_grad():
-            for i in trange(32, desc="Sampling Height", leave=False, ncols=80):
-                for j in range(32):
+            for i in trange(img_size, desc="Sampling Height", leave=False, ncols=80):
+                for j in range(img_size):
                     output = self.model(generated_images)
                     probabilities = F.softmax(output[:, :, i, j], dim=2)
-                    for channel in range(3):
+                    for channel in range(n_channel):
                         sampled_pixel = (
                             torch.multinomial(probabilities[:, channel], 1).float() / 255.0
                         ).squeeze(-1)
