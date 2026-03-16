@@ -129,3 +129,54 @@ class FinalBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.block(x)
+    
+class RowLSTM(nn.Module):
+    def __init__(self, in_channels, hidden_channels):
+        super().__init__()
+        
+        self.conv = nn.Conv2d(
+            in_channels,
+            4 * hidden_channels,
+            kernel_size=(3,1),
+            padding=(1,0)
+        )
+        
+    def forward(self, x):
+        B, C, H, W = x.shape
+        h = torch.zeros(B, hidden_channels, H, W)
+        c = torch.zeros_like(h)
+
+        for j in range(W):
+            gates = self.conv(x[:,:,:,j:j+1])
+            i,f,o,g = torch.chunk(gates,4,dim=1)
+
+            i = torch.sigmoid(i)
+            f = torch.sigmoid(f)
+            o = torch.sigmoid(o)
+            g = torch.tanh(g)
+
+            c = f*c + i*g
+            h = o*torch.tanh(c)
+
+        return h
+    
+class ResidualRowLSTMBlock(nn.Module):
+    def __init__(self, in_out_channels):
+        super().__init__()
+
+        # Row LSTM: input in_out_channels, output in_out_channels // 2
+        # This allows the conv1x1 to expand it back to in_out_channels
+        internal_channels = in_out_channels // 2
+        self.row_lstm = RowLSTM(in_channels=in_out_channels, hidden_channels=internal_channels)
+
+        # Conv 1x1: internal_channels -> in_out_channels
+        self.conv1x1 = nn.Conv2d(internal_channels, in_out_channels, kernel_size=1)
+
+    def forward(self, x):
+
+        residual = x
+
+        x = self.row_lstm(x)
+        x = self.conv1x1(x)
+
+        return x + residual

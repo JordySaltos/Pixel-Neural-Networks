@@ -47,3 +47,53 @@ class PixelCNN(nn.Module):
         x = x.permute(0, 1, 3, 4, 2) # [B, C, H, W, 256]
 
         return x
+
+class PixelRNN(nn.Module):
+    def __init__(self, n_channel=3, h=32, discrete_channel=256):
+        """PixelRNN Model"""
+        super(PixelRNN, self).__init__()
+
+        self.discrete_channel = discrete_channel
+
+        self.MaskAConv = maskAConv(n_channel, 2 * h, k_size=7, stride=1, pad=3)
+        block_residual = []
+
+        for i in range(12):   # 12 residual blocks
+          block_residual.append(ResidualRowLSTMBlock(2*h))
+
+        self.block_residual = nn.Sequential(*block_residual)
+
+        # 1x1 conv to 3x256 channels
+        self.out = nn.Sequential(
+            nn.ReLU(),
+            nn.Conv2d(2 * h, 1024, kernel_size=1, stride=1, padding=0),
+            nn.BatchNorm2d(1024),
+            nn.ReLU(),
+            nn.Conv2d(1024, n_channel * discrete_channel, kernel_size=1, stride=1, padding=0))
+
+    def forward(self, x):
+        """
+        Args:
+            x: [batch_size, channel, height, width]
+        Return:
+            out [batch_size, channel, height, width, 256]
+        """
+        batch_size, c_in, height, width = x.size()
+
+        # [batch_size, 2h, 32, 32]
+        x = self.MaskAConv(x)
+
+        # ejecutar bloques residuales RowLSTM
+        # [batch_size, 2h, 32, 32]
+        x = self.block_residual(x)
+
+        # [batch_size, 3x256, 32, 32]
+        x = self.out(x)
+
+        # [batch_size, 3, 256, 32, 32]
+        x = x.view(batch_size, c_in, self.discrete_channel, height, width)
+
+        # [batch_size, 3, 32, 32, 256]
+        x = x.permute(0, 1, 3, 4, 2)
+
+        return x
