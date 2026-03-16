@@ -4,52 +4,36 @@ from train import Solver
 
 
 def create_dataloaders(config):
-    """
-    Creates the training and test dataloaders.
-    """
-
     train_loader = get_loader(
         config.dataset_dir,
         config.batch_size,
-        train=True
+        train=True,
+        dataset_name=config.dataset,
     )
-
     test_loader = get_loader(
         config.dataset_dir,
         config.batch_size,
-        train=False
+        train=False,
+        dataset_name=config.dataset,
     )
-
     return train_loader, test_loader
 
 
 def run_training(config, train_loader, test_loader):
-    """
-    Initializes the solver and runs the training procedure.
-    """
-
-    solver = Solver(
-        config,
-        train_loader=train_loader,
-        test_loader=test_loader
-    )
-
+    solver = Solver(config, train_loader=train_loader, test_loader=test_loader)
     print(config)
-
     solver.build()
     solver.train()
+    return solver
 
 
 def main():
     """
-    Entry point of the program.
+    Entry point of the program. 
     Initializes configuration, loads data and starts training.
     """
-
-    config = Config().initialize()
-
+    config = BaseConfig().initialize()
     train_loader, test_loader = create_dataloaders(config)
-
     run_training(config, train_loader, test_loader)
 
 
