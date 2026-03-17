@@ -89,8 +89,10 @@ class BaseConfig(object):
         self.model_dir.mkdir(exist_ok=True)
 
         if self.mode == "train":
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            self.ckpt_dir = self.model_dir / timestamp
+            timestamp   = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            model_type  = getattr(self, "model_type", "PixelCNN")
+            folder_name = f"{model_type}_{self.dataset}_{timestamp}"
+            self.ckpt_dir = self.model_dir / folder_name
             self.ckpt_dir.mkdir()
             self._save_config()
 

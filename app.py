@@ -39,7 +39,7 @@ MODEL_CONFIGS = {
         "description": "PixelRNN with Row-LSTM units. Captures long-range dependencies "
                        "better than CNN but is significantly slower.",
         "supports_h": True,
-        "supports_n_block": True,
+        "supports_n_block": False,   # fixed at 12 internally
     },
     "GatedPixelCNN": {
         "class": GatedPixelCNN,
@@ -53,36 +53,25 @@ MODEL_CONFIGS = {
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
-def find_latest_weights():
-    """Return path to model_weights.pth in the most recent results folder."""
+def list_result_folders() -> list:
+    """Return all result folders that contain a weights file, newest first."""
     if not RESULTS_DIR.exists():
-        return None
-    candidates = sorted(
-        d / WEIGHTS_FILENAME
-        for d in RESULTS_DIR.iterdir()
-        if d.is_dir() and (d / WEIGHTS_FILENAME).exists()
+        return []
+    return sorted(
+        (d for d in RESULTS_DIR.iterdir()
+         if d.is_dir() and (d / WEIGHTS_FILENAME).exists()),
+        reverse=True,   # newest first (lexicographic on  Model_DS_YYYY-MM-DD_HH-MM-SS)
     )
-    return candidates[-1] if candidates else None
 
 
-def find_sample_images():
-    """Return epoch-*.png files from the most recent results folder."""
-    if not RESULTS_DIR.exists():
-        return []
-    folders = sorted(d for d in RESULTS_DIR.iterdir() if d.is_dir())
-    if not folders:
-        return []
-    return sorted(folders[-1].glob("epoch-*.png"))
+def find_sample_images(folder: Path) -> list:
+    """Return epoch-*.png files from the given results folder."""
+    return sorted(folder.glob("epoch-*.png"))
 
 
-def read_config_from_results():
-    """Read dataset, h and n_block from the config.txt of the latest run."""
-    if not RESULTS_DIR.exists():
-        return {}
-    folders = sorted(d for d in RESULTS_DIR.iterdir() if d.is_dir())
-    if not folders:
-        return {}
-    config_file = folders[-1] / "config.txt"
+def read_config_from_folder(folder: Path) -> dict:
+    """Read dataset, h, n_block and model_type from config.txt of a run folder."""
+    config_file = folder / "config.txt"
     if not config_file.exists():
         return {}
     params = {}
@@ -91,6 +80,28 @@ def read_config_from_results():
             if line.startswith(f"{key}:"):
                 params[key] = line.split(":", 1)[1].strip()
     return params
+
+
+def pick_run_folder(key: str) -> Path | None:
+    """
+    Render a selectbox so the user can choose which saved run to load.
+    `key` must be unique across Streamlit widgets (use the mode name).
+    Returns the selected folder Path, or None if no runs exist.
+    """
+    folders = list_result_folders()
+    if not folders:
+        return None
+    # Use folder name as label (already encodes model + dataset + timestamp)
+    options = [f.name for f in folders]
+    default_idx = 0   # newest is first
+    chosen = st.selectbox(
+        "Select a saved run",
+        options,
+        index=default_idx,
+        key=f"run_selector_{key}",
+        help="Runs are listed newest first. Format: Model_Dataset_YYYY-MM-DD_HH-MM-SS",
+    )
+    return RESULTS_DIR / chosen
 
 
 @st.cache_resource
@@ -217,18 +228,18 @@ def _plot_losses(train_losses, test_losses):
 # ── results viewer ────────────────────────────────────────────────────────────
 
 def show_results():
-    weights_path = find_latest_weights()
+    folder = pick_run_folder("results")
 
-    if weights_path is None:
+    if folder is None:
         st.warning("No trained model found. Go to **Train model** first.")
         return
 
-    # Read architecture params saved during training
-    saved = read_config_from_results()
-    dataset    = saved.get("dataset")
+    weights_path = folder / WEIGHTS_FILENAME
+    saved      = read_config_from_folder(folder)
+    dataset    = saved.get("dataset", "CIFAR10")
     h          = int(saved.get("h", 128))
     n_block    = int(saved.get("n_block", 15))
-    model_type = saved.get("model_type")
+    model_type = saved.get("model_type", "PixelCNN")
 
     st.write(
         f"Loaded weights from `{weights_path}`  \n"
@@ -238,7 +249,7 @@ def show_results():
     model = load_model(str(weights_path), dataset, h, n_block, model_type)
 
     # Images saved during training
-    sample_files = find_sample_images()
+    sample_files = find_sample_images(folder)
     if sample_files:
         st.subheader("Images generated during training")
         cols = st.columns(min(len(sample_files), 5))
@@ -290,17 +301,18 @@ def _sample(model, dataset, n_images):
 # ── image completion experiment ───────────────────────────────────────────────
 
 def show_completion():
-    weights_path = find_latest_weights()
+    folder = pick_run_folder("completion")
 
-    if weights_path is None:
+    if folder is None:
         st.warning("No trained model found. Go to **Train model** first.")
         return
 
-    saved = read_config_from_results()
-    dataset    = saved.get("dataset")
+    weights_path = folder / WEIGHTS_FILENAME
+    saved      = read_config_from_folder(folder)
+    dataset    = saved.get("dataset", "CIFAR10")
     h          = int(saved.get("h", 128))
     n_block    = int(saved.get("n_block", 15))
-    model_type = saved.get("model_type")
+    model_type = saved.get("model_type", "PixelCNN")
 
     st.write(
         f"Loaded weights from `{weights_path}`  \n"
@@ -421,10 +433,15 @@ def main():
             ),
         )
 
-        n_block = st.slider(
-            "n_block / n_layers : depth of the network", 4, 20, 10, 1,
-            help="Number of residual / gated blocks. More = larger receptive field.",
-        )
+        supports_n_block = MODEL_CONFIGS[model_type]["supports_n_block"]
+        if supports_n_block:
+            n_block = st.slider(
+                "n_block / n_layers : depth of the network", 4, 20, 10, 1,
+                help="Number of residual / gated blocks. More = larger receptive field.",
+            )
+        else:
+            n_block = 12   # PixelRNN uses a fixed internal count
+            st.info("PixelRNN uses a fixed depth of 12 Row-LSTM blocks.")
 
         ds_cfg = get_dataset_config(dataset)
         st.caption(
