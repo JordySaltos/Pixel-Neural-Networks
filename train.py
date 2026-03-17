@@ -58,7 +58,9 @@ class Solver(object):
 
             if model_type == "PixelRNN":
                 self.model = model_class(
-                    n_channel=n_channel, h=h, n_block=n_block
+                    n_channel=n_channel,
+                    h=self.config.h,
+                    n_block=self.config.n_block,
                 ).to(self.device)
             elif model_type == "GatedPixelCNN":
                 self.model = model_class(
@@ -76,7 +78,14 @@ class Solver(object):
         print(self.model, "\n")
 
         if self.config.mode == "train":
-            self.optimizer = self.config.optimizer(self.model.parameters())
+            self.optimizer = self.config.optimizer(
+                self.model.parameters(),
+                lr=getattr(self.config, "lr", 1e-3),
+            )
+            # Reduce LR by 0.5 if val loss does not improve for 3 epochs
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode="min", factor=0.5, patience=3, verbose=True
+            )
             self.criterion = nn.CrossEntropyLoss()
 
     def train(self):
@@ -124,6 +133,7 @@ class Solver(object):
 
             test_loss = self.test(epoch)
             self.test_losses.append(test_loss)
+            self.scheduler.step(test_loss)  
 
             self.sample(epoch)
 
@@ -166,8 +176,9 @@ class Solver(object):
         n_channel = ds_cfg["n_channel"]
         img_size = ds_cfg["img_size"]   # always 32 after padding
 
+        n_samples = min(self.config.batch_size, 8)
         generated_images = torch.zeros(
-            self.config.batch_size, n_channel, img_size, img_size
+            n_samples, n_channel, img_size, img_size
         ).to(self.device)
 
         with torch.no_grad():

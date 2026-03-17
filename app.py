@@ -92,7 +92,7 @@ def pick_run_folder(key: str) -> Path | None:
     if not folders:
         return None
     options = [f.name for f in folders]
-    default_idx = 0  
+    default_idx = 0 
     chosen = st.selectbox(
         "Select a saved run",
         options,
@@ -123,13 +123,14 @@ def load_model(weights_path: str, dataset: str, h: int, n_block: int,
 
 # ── training ──────────────────────────────────────────────────────────────────
 
-def run_training(dataset, n_epochs, batch_size, h, n_block, model_type):
+def run_training(dataset, n_epochs, batch_size, h, n_block, model_type, lr):
     config = BaseConfig().initialize(
         parse=False,
         mode="train",
         n_epochs=n_epochs,
         batch_size=batch_size,
-        optimizer="RMSprop",
+        optimizer="Adam",
+        lr=lr,
         dataset=dataset,
         h=h,
         n_block=n_block,
@@ -140,7 +141,7 @@ def run_training(dataset, n_epochs, batch_size, h, n_block, model_type):
 
     st.write(
         f"**Device:** `{DEVICE}` | **Dataset:** `{dataset}` | "
-        f"**Model:** `{model_type}` | **h:** `{h}` | **n_block:** `{n_block}`"
+        f"**Model:** `{model_type}` | **h:** `{h}` | **n_block:** `{n_block}` | **lr:** `{lr}`"
     )
     st.write(f"**Results folder:** `{config.ckpt_dir}`")
 
@@ -364,29 +365,41 @@ def show_completion():
     col1, col2 = st.columns([1, 2])
     with col1:
         if dataset == "MNIST":
-            chosen_class = st.selectbox("Select a digit (0–9)", list(range(10)))
-            class_label  = str(chosen_class)
+            chosen_class  = st.selectbox("Select a digit (0–9)", list(range(10)))
+            class_label   = str(chosen_class)
+            numeric_class = int(chosen_class)
             matching_indices = (test_labels == chosen_class).nonzero(as_tuple=True)[0]
             if len(matching_indices) == 0:
                 st.warning(f"No images found for digit {chosen_class}.")
                 return
-            img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
+        elif dataset == "CIFAR10":
+            chosen_class  = st.selectbox("Select a class", CIFAR10_CLASSES)
+            numeric_class = CIFAR10_CLASSES.index(chosen_class)
+            class_label   = chosen_class
+            matching_indices = (test_labels == numeric_class).nonzero(as_tuple=True)[0]
+            if len(matching_indices) == 0:
+                st.warning(f"No images found for class '{chosen_class}'.")
+                return
         else:
-            if dataset == "CIFAR10":
-                chosen_class = st.selectbox("Select a class", CIFAR10_CLASSES)
-                class_idx    = CIFAR10_CLASSES.index(chosen_class)
-                class_label  = chosen_class
-                matching_indices = (test_labels == class_idx).nonzero(as_tuple=True)[0]
-                if len(matching_indices) == 0:
-                    st.warning(f"No images found for class '{chosen_class}'.")
-                    return
-                img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
-            else:
-                class_label = "random"
-                img_idx = torch.randint(len(test_images), (1,)).item()
+            class_label   = "random"
+            numeric_class = -1
+            matching_indices = torch.arange(len(test_images))
+
+        img_key        = f"img_idx_{dataset}_{numeric_class}"
+        prev_class_key = f"prev_class_{dataset}"
+
+        if st.session_state.get(prev_class_key) != numeric_class or img_key not in st.session_state:
+            st.session_state[img_key] = matching_indices[
+                torch.randint(len(matching_indices), (1,)).item()
+            ].item()
+            st.session_state[prev_class_key] = numeric_class
+
+        img_idx = st.session_state[img_key]
 
         if st.button("Pick another image", key="resample_img"):
-            del st.session_state[loader_key]
+            st.session_state[img_key] = matching_indices[
+                torch.randint(len(matching_indices), (1,)).item()
+            ].item()
             st.rerun()
 
     with col2:
@@ -495,7 +508,16 @@ def main():
                 help="Number of residual / gated blocks. More = larger receptive field.",
             )
         else:
-            n_block = 12 
+            n_block = 12
+
+        st.subheader("Optimizer")
+        lr = st.select_slider(
+            "Learning rate",
+            options=[1e-4, 3e-4, 5e-4, 1e-3, 3e-3, 5e-3, 1e-2],
+            value=1e-3,
+            format_func=lambda x: f"{x:.0e}",
+            help="Adam learning rate. Start with 1e-3; reduce if loss oscillates.",
+        )
 
         ds_cfg = get_dataset_config(dataset)
         st.caption(
@@ -504,7 +526,7 @@ def main():
         )
 
         if st.button("Start training"):
-            run_training(dataset, n_epochs, batch_size, h, n_block, model_type)
+            run_training(dataset, n_epochs, batch_size, h, n_block, model_type, lr)
 
     elif mode == "Image Generation":
         st.header("Image Generation")

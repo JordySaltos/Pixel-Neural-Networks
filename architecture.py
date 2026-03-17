@@ -42,7 +42,8 @@ class MaskedConv(nn.Conv2d):
         self.register_buffer('mask', mask)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.weight.data *= self.mask
+        with torch.no_grad():
+            self.weight.data.copy_(self.weight.data * self.mask)
         return super().forward(x)
 
 
@@ -91,6 +92,7 @@ class ResidualBlock(nn.Module):
                  stride: int = 1, pad: int = 1) -> None:
         super().__init__()
         self.block = nn.Sequential(
+            nn.ReLU(inplace=True),          
             nn.Conv2d(2 * h, h, kernel_size=1),
             nn.BatchNorm2d(h),
             nn.ReLU(inplace=True),
@@ -99,7 +101,6 @@ class ResidualBlock(nn.Module):
             nn.ReLU(inplace=True),
             nn.Conv2d(h, 2 * h, kernel_size=1),
             nn.BatchNorm2d(2 * h),
-            nn.ReLU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -134,12 +135,11 @@ class RowLSTM(nn.Module):
     def __init__(self, in_channels, hidden_channels):
         super().__init__()
         self.hidden_channels = hidden_channels
-        
         self.conv = nn.Conv2d(
             in_channels,
             4 * hidden_channels,
-            kernel_size=(3,1),
-            padding=(1,0)
+            kernel_size=(3, 1),
+            padding=(0, 0),  
         )
         
     def forward(self, x):
@@ -149,7 +149,8 @@ class RowLSTM(nn.Module):
 
         outputs = []
         for j in range(W):
-            gates = self.conv(x[:,:,:,j:j+1])
+            col = nn.functional.pad(x[:, :, :, j:j+1], (0, 0, 2, 0))
+            gates = self.conv(col)
             i,f,o,g = torch.chunk(gates,4,dim=1)
 
             i = torch.sigmoid(i)

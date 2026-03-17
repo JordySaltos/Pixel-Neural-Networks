@@ -108,14 +108,17 @@ class GatedPixelCNN(nn.Module):
 
         self.in_channels = in_channels  # store to reshape output correctly
 
-        self.input_conv = nn.Conv2d(in_channels, channels, 7, padding=3)
+        self.input_conv = MaskedConv('A', in_channels, channels,
+                                     k_size=7, stride=1, pad=3)
 
         self.blocks = nn.ModuleList(
             [GatedPixelCNNBlock(channels) for _ in range(n_layers)]
         )
 
-        # Output: in_channels * 256 logits (one distribution per channel)
-        self.out = nn.Conv2d(channels, in_channels * 256, 1)
+        self.out = nn.Sequential(
+            nn.ReLU(inplace=True),
+            nn.Conv2d(channels, in_channels * 256, 1),
+        )
 
     def forward(self, x):
 

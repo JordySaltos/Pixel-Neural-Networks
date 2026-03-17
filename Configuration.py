@@ -63,6 +63,10 @@ class BaseConfig(object):
                             choices=["PixelCNN", "PixelRNN", "GatedPixelCNN"],
                             help="Autoregressive architecture to train")
 
+        # Optimizer
+        parser.add_argument("--lr", type=float, default=1e-3,
+                            help="Initial learning rate")
+
         # Logging
         parser.add_argument("--log_interval", type=int, default=100)
         parser.add_argument("--save_interval", type=int, default=10)
