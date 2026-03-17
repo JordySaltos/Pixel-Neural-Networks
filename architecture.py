@@ -181,6 +181,12 @@ class ResidualRowLSTMBlock(nn.Module):
 
         return x + residual
     
+
+class GatedActivation(nn.Module):
+    def forward(self, x):
+        a, b = torch.chunk(x, 2, dim=1)
+        return torch.tanh(a) * torch.sigmoid(b)
+    
 class VerticalStack(nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size=3):
@@ -282,30 +288,3 @@ class Encoder(nn.Module):
 
         return z
     
-class ConditionalPixelCNN(PixelCNN):  # decoder autoregresive
-
-    def __init__(self, n_channel=3, h=32, latent_dim=128, discrete_channel=256):
-
-        super().__init__(n_channel, h, discrete_channel)
-
-        self.z_proj = nn.Linear(latent_dim, 2*h)
-
-    def forward(self, x, z):
-
-        batch_size, c_in, height, width = x.size()
-
-        cond = self.z_proj(z).unsqueeze(-1).unsqueeze(-1)
-
-        x = self.MaskAConv(x)
-
-        x = x + cond
-
-        x = self.MaskBConv(x)
-
-        x = self.out(x)
-
-        x = x.view(batch_size, c_in, self.discrete_channel, height, width)
-
-        x = x.permute(0,1,3,4,2)
-
-        return x

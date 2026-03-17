@@ -128,6 +128,34 @@ class GatedPixelCNN(nn.Module):
 
         return x
     
+class ConditionalPixelCNN(PixelCNN):  # decoder autoregresive
+
+    def __init__(self, n_channel=3, h=32, latent_dim=128, discrete_channel=256):
+
+        super().__init__(n_channel, h, discrete_channel)
+
+        self.z_proj = nn.Linear(latent_dim, 2*h)
+
+    def forward(self, x, z):
+
+        batch_size, c_in, height, width = x.size()
+
+        cond = self.z_proj(z).unsqueeze(-1).unsqueeze(-1)
+
+        x = self.MaskAConv(x)
+
+        x = x + cond
+
+        x = self.MaskBConv(x)
+
+        x = self.out(x)
+
+        x = x.view(batch_size, c_in, self.discrete_channel, height, width)
+
+        x = x.permute(0,1,3,4,2)
+
+        return x
+    
 class PixelCNNAutoencoder(nn.Module): # encoder and decoder
 
     def __init__(self):
@@ -143,3 +171,4 @@ class PixelCNNAutoencoder(nn.Module): # encoder and decoder
         z = self.encoder(x)
 
         out = self.decoder(x, z)
+
