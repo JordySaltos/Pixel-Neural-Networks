@@ -7,7 +7,7 @@ import torch
 
 project_dir = Path(".").resolve()
 
-datasets_dir = project_dir / "datasets"
+datasets_dir = project_dir / "dataset"
 datasets_dir.mkdir(exist_ok=True)
 
 results_dir = project_dir / "results"
@@ -40,7 +40,8 @@ class BaseConfig(object):
     def __init__(self):
         self._build_parser()
 
-    def _build_parser(self):
+    def _build_parser(self) -> None:
+        """Build the argparse parser and store it on self.parser."""
         parser = argparse.ArgumentParser()
 
         parser.add_argument("--mode", type=str, default="train")
@@ -59,6 +60,13 @@ class BaseConfig(object):
                             help="Bottleneck dimension of the PixelCNN")
         parser.add_argument("--n_block", type=int, default=15,
                             help="Number of residual blocks in the PixelCNN")
+        parser.add_argument("--model_type", type=str, default="PixelCNN",
+                            choices=["PixelCNN", "PixelRNN", "GatedPixelCNN"],
+                            help="Autoregressive architecture to train")
+
+        # Optimizer
+        parser.add_argument("--lr", type=float, default=1e-3,
+                            help="Initial learning rate")
 
         # Logging
         parser.add_argument("--log_interval", type=int, default=100)
@@ -66,10 +74,22 @@ class BaseConfig(object):
 
         self.parser = parser
 
-    def parse(self):
+    def parse(self) -> None:
+        """Hook for subclasses to add extra arguments before parsing."""
         pass
 
     def initialize(self, parse=True, **extra_kwargs):
+        """Parse arguments, apply extra keyword overrides, and set up directories.
+
+        Args:
+            parse: If True, parse CLI arguments (set False when called from
+                the Streamlit UI to avoid argparse conflicts).
+            **extra_kwargs: Key-value pairs that override parsed arguments
+                (e.g. ``dataset="MNIST"``, ``lr=3e-4``).
+
+        Returns:
+            self (for chaining).
+        """
         self.parse()
 
         args = vars(self.parser.parse_known_args()[0])
@@ -86,8 +106,10 @@ class BaseConfig(object):
         self.model_dir.mkdir(exist_ok=True)
 
         if self.mode == "train":
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            self.ckpt_dir = self.model_dir / timestamp
+            timestamp   = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            model_type  = getattr(self, "model_type", "PixelCNN")
+            folder_name = f"{model_type}_{self.dataset}_{timestamp}"
+            self.ckpt_dir = self.model_dir / folder_name
             self.ckpt_dir.mkdir()
             self._save_config()
 
@@ -97,7 +119,8 @@ class BaseConfig(object):
 
         return self
 
-    def _save_config(self):
+    def _save_config(self) -> None:
+        """Write all configuration attributes to ``config.txt`` in ckpt_dir."""
         config_file = self.ckpt_dir / "config.txt"
         with open(config_file, "w") as f:
             f.write("Configurations\n")
@@ -105,9 +128,18 @@ class BaseConfig(object):
                 f.write(f"{key}: {value}\n")
             f.write("End\n")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        """Return a human-readable summary of the configuration."""
         return "Configurations\n" + pprint.pformat(self.__dict__)
 
 
-def get_config(parse=True):
+def get_config(parse=True) -> "BaseConfig":
+    """Convenience factory: create and initialise a BaseConfig.
+
+    Args:
+        parse: Whether to parse CLI arguments.
+
+    Returns:
+        An initialised BaseConfig instance.
+    """
     return BaseConfig().initialize(parse=parse)

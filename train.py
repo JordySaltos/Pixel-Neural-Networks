@@ -6,8 +6,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.utils import save_image
 
-from model import PixelCNN
+from model import PixelCNN, PixelRNN, GatedPixelCNN
 from Loader import get_dataset_config
+
+MODEL_REGISTRY = {
+    "PixelCNN":      PixelCNN,
+    "PixelRNN":      PixelRNN,
+    "GatedPixelCNN": GatedPixelCNN,
+}
 
 
 class Solver(object):
@@ -17,6 +23,13 @@ class Solver(object):
     """
 
     def __init__(self, config, train_loader, test_loader):
+        """Initialise the Solver with data loaders and configuration.
+
+        Args:
+            config: A BaseConfig instance with all training hyper-parameters.
+            train_loader: DataLoader for the training split.
+            test_loader: DataLoader for the validation/test split.
+        """
         self.config = config
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -30,23 +43,56 @@ class Solver(object):
         self.train_losses = []
         self.test_losses = []
 
-    def build(self):
+    def build(self, model_override=None):
         """
-        Builds the PixelCNN using architecture params from config,
-        then initializes optimizer and loss function.
-        """
-        ds_cfg = get_dataset_config(self.config.dataset)
-        n_channel = ds_cfg["n_channel"]
+        Builds the model using architecture params from config,
+        or uses the externally supplied `model_override` instance.
+        Then initializes optimizer and loss function.
 
-        self.model = PixelCNN(
-            n_channel=n_channel,
-            h=self.config.h,
-            n_block=self.config.n_block,
-        ).to(self.device)
+        Args:
+            model_override: an already-instantiated nn.Module to use instead
+                            of the default PixelCNN. Used by app.py when the
+                            user selects PixelRNN or GatedPixelCNN.
+        """
+        if model_override is not None:
+            self.model = model_override.to(self.device)
+        else:
+            # Default: build from config (used by main.py / CLI)
+            ds_cfg = get_dataset_config(self.config.dataset)
+            n_channel = ds_cfg["n_channel"]
+            model_type = getattr(self.config, "model_type", "PixelCNN")
+            model_class = MODEL_REGISTRY.get(model_type, PixelCNN)
+
+            if model_type == "PixelRNN":
+                self.model = model_class(
+                    n_channel=n_channel,
+                    h=self.config.h,
+                    n_block=self.config.n_block,
+                ).to(self.device)
+            elif model_type == "GatedPixelCNN":
+                self.model = model_class(
+                    in_channels=n_channel,
+                    channels=self.config.h,
+                    n_layers=self.config.n_block,
+                ).to(self.device)
+            else:
+                self.model = model_class(
+                    n_channel=n_channel,
+                    h=self.config.h,
+                    n_block=self.config.n_block,
+                ).to(self.device)
+
         print(self.model, "\n")
 
         if self.config.mode == "train":
-            self.optimizer = self.config.optimizer(self.model.parameters())
+            self.optimizer = self.config.optimizer(
+                self.model.parameters(),
+                lr=getattr(self.config, "lr", 1e-3),
+            )
+            # Reduce LR by 0.5 if val loss does not improve for 3 epochs
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode="min", factor=0.5, patience=3
+            )
             self.criterion = nn.CrossEntropyLoss()
 
     def train(self):
@@ -94,6 +140,7 @@ class Solver(object):
 
             test_loss = self.test(epoch)
             self.test_losses.append(test_loss)
+            self.scheduler.step(test_loss)  
 
             self.sample(epoch)
 
@@ -136,8 +183,9 @@ class Solver(object):
         n_channel = ds_cfg["n_channel"]
         img_size = ds_cfg["img_size"]   # always 32 after padding
 
+        n_samples = self.config.batch_size
         generated_images = torch.zeros(
-            self.config.batch_size, n_channel, img_size, img_size
+            n_samples, n_channel, img_size, img_size
         ).to(self.device)
 
         with torch.no_grad():

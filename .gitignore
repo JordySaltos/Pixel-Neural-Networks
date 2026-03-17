@@ -20,8 +20,9 @@ sandbox.py
 *.png
 
 # Data files
-datasets
+dataset
 results
+Old_results
 
 # *.csv
 *.parquet
