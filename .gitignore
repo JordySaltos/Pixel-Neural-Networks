@@ -20,7 +20,7 @@ sandbox.py
 *.png
 
 # Data files
-datasets
+dataset
 results
 
 # *.csv
