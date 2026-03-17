@@ -39,7 +39,7 @@ MODEL_CONFIGS = {
         "description": "PixelRNN with Row-LSTM units. Captures long-range dependencies "
                        "better than CNN but is significantly slower.",
         "supports_h": True,
-        "supports_n_block": False,   # fixed at 12 internally
+        "supports_n_block": True, 
     },
     "GatedPixelCNN": {
         "class": GatedPixelCNN,
@@ -91,9 +91,8 @@ def pick_run_folder(key: str) -> Path | None:
     folders = list_result_folders()
     if not folders:
         return None
-    # Use folder name as label (already encodes model + dataset + timestamp)
     options = [f.name for f in folders]
-    default_idx = 0   # newest is first
+    default_idx = 0  
     chosen = st.selectbox(
         "Select a saved run",
         options,
@@ -261,21 +260,46 @@ def show_results():
     n_images = st.slider("Number of images to generate", 1, 16, 4)
 
     if st.button("Generate"):
+        ds_cfg   = get_dataset_config(dataset)
+        n_channel = ds_cfg["n_channel"]
+        cmap      = "gray" if n_channel == 1 else None
+        col_real, col_gen = st.columns(2)
+        real_key = f"real_samples_{dataset}_{n_images}"
+        if real_key not in st.session_state:
+            real_loader = get_loader(
+                "./dataset", batch_size=n_images, train=False, dataset_name=dataset
+            )
+            real_imgs, _ = next(iter(real_loader))
+            st.session_state[real_key] = real_imgs
+        real_imgs = st.session_state[real_key]
+
+        with col_real:
+            st.markdown("**Real images (dataset)**")
+            grid_real = make_grid(real_imgs.cpu(), nrow=4, normalize=True, pad_value=1)
+            npreal    = grid_real.numpy().transpose(1, 2, 0)
+            if npreal.shape[2] == 1:
+                npreal = npreal[:, :, 0]
+            fig_real, ax_real = plt.subplots(figsize=(4, max(2, n_images // 4 * 2)))
+            ax_real.imshow(np.clip(npreal, 0, 1), cmap=cmap)
+            ax_real.axis("off")
+            ax_real.set_title(f"{dataset} — real")
+            st.pyplot(fig_real)
+
+        # Generated samples
         with st.spinner("Sampling pixel-by-pixel… (this can take a while)"):
             generated = _sample(model, dataset, n_images)
 
-        grid = make_grid(generated.cpu(), nrow=4, normalize=True, pad_value=1)
-        npimg = grid.numpy().transpose(1, 2, 0)
-        # Grayscale images come out with 1 channel — squeeze for imshow
-        if npimg.shape[2] == 1:
-            npimg = npimg[:, :, 0]
-
-        fig, ax = plt.subplots(figsize=(8, max(2, n_images // 4 * 2)))
-        cmap = "gray" if get_dataset_config(dataset)["n_channel"] == 1 else None
-        ax.imshow(np.clip(npimg, 0, 1), cmap=cmap)
-        ax.axis("off")
-        ax.set_title(f"PixelCNN generated samples ({dataset})")
-        st.pyplot(fig)
+        with col_gen:
+            st.markdown("**Generated images (model)**")
+            grid_gen = make_grid(generated.cpu(), nrow=4, normalize=True, pad_value=1)
+            npgen    = grid_gen.numpy().transpose(1, 2, 0)
+            if npgen.shape[2] == 1:
+                npgen = npgen[:, :, 0]
+            fig_gen, ax_gen = plt.subplots(figsize=(4, max(2, n_images // 4 * 2)))
+            ax_gen.imshow(np.clip(npgen, 0, 1), cmap=cmap)
+            ax_gen.axis("off")
+            ax_gen.set_title(f"{model_type} — generated")
+            st.pyplot(fig_gen)
 
 
 def _sample(model, dataset, n_images):
@@ -358,7 +382,6 @@ def show_completion():
                     return
                 img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
             else:
-                # Generic fallback: fully random image
                 class_label = "random"
                 img_idx = torch.randint(len(test_images), (1,)).item()
 
@@ -438,7 +461,7 @@ def _sample_conditional(model, dataset, real_image, n_completions):
 def main():
     st.title("PixelCNN — image generation")
 
-    mode = st.sidebar.selectbox("Choose mode", ["Train model", "View results", "Image Completion"])
+    mode = st.sidebar.selectbox("Choose mode", ["Train model", "Image Generation", "Image Completion"])
 
     if mode == "Train model":
         st.header("Train a Pixel Neural Network")
@@ -472,8 +495,7 @@ def main():
                 help="Number of residual / gated blocks. More = larger receptive field.",
             )
         else:
-            n_block = 12   # PixelRNN uses a fixed internal count
-            st.info("PixelRNN uses a fixed depth of 12 Row-LSTM blocks.")
+            n_block = 12 
 
         ds_cfg = get_dataset_config(dataset)
         st.caption(
@@ -484,8 +506,8 @@ def main():
         if st.button("Start training"):
             run_training(dataset, n_epochs, batch_size, h, n_block, model_type)
 
-    elif mode == "View results":
-        st.header("Results")
+    elif mode == "Image Generation":
+        st.header("Image Generation")
         show_results()
         
     elif mode == "Image Completion":
