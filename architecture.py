@@ -132,6 +132,17 @@ class FinalBlock(nn.Module):
         return self.block(x)
     
 class RowLSTM(nn.Module):
+    """Row-LSTM unit that processes one column at a time left-to-right.
+
+    For each column j the hidden state is updated using a (3,1) convolution
+    over a causal vertical context (current row and the row above), keeping
+    causality in both spatial dimensions.
+
+    Args:
+        in_channels: Number of input feature channels.
+        hidden_channels: Number of LSTM hidden (output) channels.
+    """
+
     def __init__(self, in_channels, hidden_channels):
         super().__init__()
         self.hidden_channels = hidden_channels
@@ -142,7 +153,8 @@ class RowLSTM(nn.Module):
             padding=(0, 0),  
         )
         
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Run the Row-LSTM over all columns and return the full feature map."""
         B, C, H, W = x.shape
         h = torch.zeros(B, self.hidden_channels, H, 1, device=x.device)
         c = torch.zeros_like(h)
@@ -165,6 +177,15 @@ class RowLSTM(nn.Module):
         return torch.cat(outputs, dim=3)
     
 class ResidualRowLSTMBlock(nn.Module):
+    """Residual block wrapping a RowLSTM with a 1×1 projection.
+
+    The bottleneck halves the channels internally, then a 1×1 conv restores
+    the original width before adding the skip connection.
+
+    Args:
+        in_out_channels: Number of channels for both input and output.
+    """
+
     def __init__(self, in_out_channels):
         super().__init__()
 
@@ -174,8 +195,8 @@ class ResidualRowLSTMBlock(nn.Module):
         # Conv 1x1: internal_channels -> in_out_channels
         self.conv1x1 = nn.Conv2d(internal_channels, in_out_channels, kernel_size=1)
 
-    def forward(self, x):
-
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply Row-LSTM bottleneck and add the residual skip connection."""
         residual = x
 
         x = self.row_lstm(x)
@@ -185,11 +206,29 @@ class ResidualRowLSTMBlock(nn.Module):
     
 
 class GatedActivation(nn.Module):
-    def forward(self, x):
+    """Element-wise gated activation: tanh(a) * sigmoid(b).
+
+    Splits the channel dimension in half and applies tanh to the first half
+    and sigmoid to the second, then multiplies them element-wise.
+    """
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Split channels and apply gated activation."""
         a, b = torch.chunk(x, 2, dim=1)
         return torch.tanh(a) * torch.sigmoid(b)
     
 class VerticalStack(nn.Module):
+    """Causal vertical convolution stack for GatedPixelCNN.
+
+    Pads (kernel_size - 1) rows on the top only so the convolution cannot
+    attend to any row below the current position.
+
+    Args:
+        in_channels: Number of input channels.
+        out_channels: Number of output channels (before gating; the conv
+            produces ``2 * out_channels`` which GatedActivation halves).
+        kernel_size: Spatial kernel size (default 3).
+    """
 
     def __init__(self, in_channels, out_channels, kernel_size=3):
         super().__init__()
@@ -205,7 +244,8 @@ class VerticalStack(nn.Module):
 
         self.gate = GatedActivation()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply causal top-padding, convolution, and gated activation."""
         # Pad only the top — convolution cannot see rows below the current one
         x = nn.functional.pad(x, (0, 0, self.pad_top, 0))
         x = self.conv(x)
@@ -213,6 +253,17 @@ class VerticalStack(nn.Module):
         return x
 
 class HorizontalStack(nn.Module):
+    """Causal horizontal convolution stack for GatedPixelCNN.
+
+    Pads (kernel_size - 1) columns on the left only so the convolution
+    cannot attend to any pixel to the right of the current position.
+    Also projects the vertical-stack output and adds it before gating.
+
+    Args:
+        in_channels: Number of input channels.
+        out_channels: Number of output channels.
+        kernel_size: Spatial kernel size (default 3).
+    """
 
     def __init__(self, in_channels, out_channels, kernel_size=3):
         super().__init__()
@@ -231,7 +282,8 @@ class HorizontalStack(nn.Module):
         self.v_to_h  = nn.Conv2d(out_channels, 2 * out_channels, 1)
         self.residual = nn.Conv2d(out_channels, out_channels, 1)
 
-    def forward(self, h, v):
+    def forward(self, h: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+        """Apply causal left-padding, fuse vertical output, gate, and add residual."""
         # Pad only the left — convolution cannot see pixels to the right
         h_out = nn.functional.pad(h, (self.pad_left, 0, 0, 0))
         h_out = self.conv(h_out)
@@ -244,6 +296,11 @@ class HorizontalStack(nn.Module):
         return self.residual(h_out) + h
     
 class GatedPixelCNNBlock(nn.Module):
+    """One layer of a Gated PixelCNN combining vertical and horizontal stacks.
+
+    Args:
+        channels: Number of feature channels (same for input and output).
+    """
 
     def __init__(self, channels):
         super().__init__()
@@ -251,8 +308,10 @@ class GatedPixelCNNBlock(nn.Module):
         self.vertical = VerticalStack(channels, channels)
         self.horizontal = HorizontalStack(channels, channels)
 
-    def forward(self, v, h):
-
+    def forward(
+        self, v: torch.Tensor, h: torch.Tensor
+    ) -> tuple:
+        """Run one gated block; returns updated (v_out, h_out)."""
         v_out = self.vertical(v)
 
         h_out = self.horizontal(h, v_out)
@@ -260,6 +319,14 @@ class GatedPixelCNNBlock(nn.Module):
         return v_out, h_out
     
 class Encoder(nn.Module):
+    """Convolutional encoder that maps an image to a latent vector.
+
+    Used as the conditioning encoder in PixelCNNAutoencoder.
+
+    Args:
+        in_channels: Number of image channels.
+        latent_dim: Dimensionality of the output latent vector.
+    """
 
     def __init__(self, in_channels=3, latent_dim=128):
         super().__init__()
@@ -279,8 +346,8 @@ class Encoder(nn.Module):
 
         self.fc = nn.Linear(256, latent_dim)
 
-    def forward(self,x):
-
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Encode an image batch to latent vectors of shape (B, latent_dim)."""
         x = self.net(x)
 
         x = x.view(x.size(0),-1)

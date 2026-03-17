@@ -23,6 +23,13 @@ class Solver(object):
     """
 
     def __init__(self, config, train_loader, test_loader):
+        """Initialise the Solver with data loaders and configuration.
+
+        Args:
+            config: A BaseConfig instance with all training hyper-parameters.
+            train_loader: DataLoader for the training split.
+            test_loader: DataLoader for the validation/test split.
+        """
         self.config = config
         self.train_loader = train_loader
         self.test_loader = test_loader
@@ -84,7 +91,7 @@ class Solver(object):
             )
             # Reduce LR by 0.5 if val loss does not improve for 3 epochs
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.5, patience=3, verbose=True
+                self.optimizer, mode="min", factor=0.5, patience=3
             )
             self.criterion = nn.CrossEntropyLoss()
 
@@ -176,7 +183,7 @@ class Solver(object):
         n_channel = ds_cfg["n_channel"]
         img_size = ds_cfg["img_size"]   # always 32 after padding
 
-        n_samples = min(self.config.batch_size, 8)
+        n_samples = self.config.batch_size
         generated_images = torch.zeros(
             n_samples, n_channel, img_size, img_size
         ).to(self.device)

@@ -22,6 +22,7 @@ sandbox.py
 # Data files
 dataset
 results
+Old_results
 
 # *.csv
 *.parquet
