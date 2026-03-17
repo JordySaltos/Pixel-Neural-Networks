@@ -23,23 +23,30 @@ DATASET_CONFIGS = {
 }
 
 
-def get_loader(directory="./datasets",
+def get_loader(directory="./dataset",
                batch_size=128,
                train=True,
                dataset_name="CIFAR10",
-               num_workers=1,
+               num_workers=0,
                pin_memory=True):
     """
     Creates a DataLoader for the chosen dataset (CIFAR10 or MNIST).
 
     Args:
-        directory: path where the dataset is stored
+        directory: root path where datasets are stored. Torchvision will
+                   create a subdirectory named after the dataset automatically,
+                   so pass the project-level dataset root (e.g. "./dataset"),
+                   NOT a path that already includes the dataset name.
         batch_size: number of images per batch
         train: whether to load the training or test set
         dataset_name: "CIFAR10" or "MNIST"
-        num_workers: number of workers for data loading
+        num_workers: number of worker processes for data loading.
+                     Defaults to 0 for Windows compatibility (avoids spawn issues).
         pin_memory: useful when training on GPU
     """
+    import os
+    from pathlib import Path
+
     if dataset_name not in DATASET_CONFIGS:
         raise ValueError(
             f"Unknown dataset '{dataset_name}'. Choose from {list(DATASET_CONFIGS.keys())}."
@@ -47,8 +54,12 @@ def get_loader(directory="./datasets",
 
     cfg = DATASET_CONFIGS[dataset_name]
 
+    root = Path(directory)
+    if root.name == dataset_name:
+        root = root.parent
+
     dataset = cfg["loader"](
-        root=directory,
+        root=str(root),
         train=train,
         download=True,
         transform=cfg["transform"],

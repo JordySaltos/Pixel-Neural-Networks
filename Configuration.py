@@ -7,7 +7,7 @@ import torch
 
 project_dir = Path(".").resolve()
 
-datasets_dir = project_dir / "datasets"
+datasets_dir = project_dir / "dataset"
 datasets_dir.mkdir(exist_ok=True)
 
 results_dir = project_dir / "results"
@@ -59,6 +59,9 @@ class BaseConfig(object):
                             help="Bottleneck dimension of the PixelCNN")
         parser.add_argument("--n_block", type=int, default=15,
                             help="Number of residual blocks in the PixelCNN")
+        parser.add_argument("--model_type", type=str, default="PixelCNN",
+                            choices=["PixelCNN", "PixelRNN", "GatedPixelCNN"],
+                            help="Autoregressive architecture to train")
 
         # Logging
         parser.add_argument("--log_interval", type=int, default=100)

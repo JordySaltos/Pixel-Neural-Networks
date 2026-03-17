@@ -129,3 +129,161 @@ class FinalBlock(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.block(x)
+    
+class RowLSTM(nn.Module):
+    def __init__(self, in_channels, hidden_channels):
+        super().__init__()
+        self.hidden_channels = hidden_channels
+        
+        self.conv = nn.Conv2d(
+            in_channels,
+            4 * hidden_channels,
+            kernel_size=(3,1),
+            padding=(1,0)
+        )
+        
+    def forward(self, x):
+        B, C, H, W = x.shape
+        h = torch.zeros(B, self.hidden_channels, H, 1, device=x.device)
+        c = torch.zeros_like(h)
+
+        outputs = []
+        for j in range(W):
+            gates = self.conv(x[:,:,:,j:j+1])
+            i,f,o,g = torch.chunk(gates,4,dim=1)
+
+            i = torch.sigmoid(i)
+            f = torch.sigmoid(f)
+            o = torch.sigmoid(o)
+            g = torch.tanh(g)
+
+            c = f*c + i*g
+            h = o*torch.tanh(c)
+            outputs.append(h)
+
+        return torch.cat(outputs, dim=3)
+    
+class ResidualRowLSTMBlock(nn.Module):
+    def __init__(self, in_out_channels):
+        super().__init__()
+
+        internal_channels = in_out_channels // 2
+        self.row_lstm = RowLSTM(in_channels=in_out_channels, hidden_channels=internal_channels)
+
+        # Conv 1x1: internal_channels -> in_out_channels
+        self.conv1x1 = nn.Conv2d(internal_channels, in_out_channels, kernel_size=1)
+
+    def forward(self, x):
+
+        residual = x
+
+        x = self.row_lstm(x)
+        x = self.conv1x1(x)
+
+        return x + residual
+    
+
+class GatedActivation(nn.Module):
+    def forward(self, x):
+        a, b = torch.chunk(x, 2, dim=1)
+        return torch.tanh(a) * torch.sigmoid(b)
+    
+class VerticalStack(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        super().__init__()
+        self.pad_top = kernel_size - 1
+        self.pad_h   = kernel_size // 2   # symmetric horizontal pad
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2 * out_channels,
+            kernel_size=(kernel_size, kernel_size),
+            padding=(0, self.pad_h),  # vertical handled manually
+        )
+
+        self.gate = GatedActivation()
+
+    def forward(self, x):
+        # Pad only the top — convolution cannot see rows below the current one
+        x = nn.functional.pad(x, (0, 0, self.pad_top, 0))
+        x = self.conv(x)
+        x = self.gate(x)
+        return x
+
+class HorizontalStack(nn.Module):
+
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        super().__init__()
+
+        self.pad_left = kernel_size - 1
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2 * out_channels,
+            kernel_size=(1, kernel_size),
+            padding=(0, 0),  # horizontal handled manually
+        )
+
+        self.gate = GatedActivation()
+
+        self.v_to_h  = nn.Conv2d(out_channels, 2 * out_channels, 1)
+        self.residual = nn.Conv2d(out_channels, out_channels, 1)
+
+    def forward(self, h, v):
+        # Pad only the left — convolution cannot see pixels to the right
+        h_out = nn.functional.pad(h, (self.pad_left, 0, 0, 0))
+        h_out = self.conv(h_out)
+
+        v_proj = self.v_to_h(v)
+
+        h_out = h_out + v_proj
+        h_out = self.gate(h_out)
+
+        return self.residual(h_out) + h
+    
+class GatedPixelCNNBlock(nn.Module):
+
+    def __init__(self, channels):
+        super().__init__()
+
+        self.vertical = VerticalStack(channels, channels)
+        self.horizontal = HorizontalStack(channels, channels)
+
+    def forward(self, v, h):
+
+        v_out = self.vertical(v)
+
+        h_out = self.horizontal(h, v_out)
+
+        return v_out, h_out
+    
+class Encoder(nn.Module):
+
+    def __init__(self, in_channels=3, latent_dim=128):
+        super().__init__()
+
+        self.net = nn.Sequential(
+            nn.Conv2d(in_channels, 64, 4, 2, 1),
+            nn.ReLU(),
+
+            nn.Conv2d(64,128,4,2,1),
+            nn.ReLU(),
+
+            nn.Conv2d(128,256,4,2,1),
+            nn.ReLU(),
+
+            nn.AdaptiveAvgPool2d(1)
+        )
+
+        self.fc = nn.Linear(256, latent_dim)
+
+    def forward(self,x):
+
+        x = self.net(x)
+
+        x = x.view(x.size(0),-1)
+
+        z = self.fc(x)
+
+        return z

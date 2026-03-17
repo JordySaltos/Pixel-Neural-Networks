@@ -6,8 +6,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.utils import save_image
 
-from model import PixelCNN
+from model import PixelCNN, PixelRNN, GatedPixelCNN
 from Loader import get_dataset_config
+
+MODEL_REGISTRY = {
+    "PixelCNN":      PixelCNN,
+    "PixelRNN":      PixelRNN,
+    "GatedPixelCNN": GatedPixelCNN,
+}
 
 
 class Solver(object):
@@ -30,19 +36,43 @@ class Solver(object):
         self.train_losses = []
         self.test_losses = []
 
-    def build(self):
+    def build(self, model_override=None):
         """
-        Builds the PixelCNN using architecture params from config,
-        then initializes optimizer and loss function.
-        """
-        ds_cfg = get_dataset_config(self.config.dataset)
-        n_channel = ds_cfg["n_channel"]
+        Builds the model using architecture params from config,
+        or uses the externally supplied `model_override` instance.
+        Then initializes optimizer and loss function.
 
-        self.model = PixelCNN(
-            n_channel=n_channel,
-            h=self.config.h,
-            n_block=self.config.n_block,
-        ).to(self.device)
+        Args:
+            model_override: an already-instantiated nn.Module to use instead
+                            of the default PixelCNN. Used by app.py when the
+                            user selects PixelRNN or GatedPixelCNN.
+        """
+        if model_override is not None:
+            self.model = model_override.to(self.device)
+        else:
+            # Default: build from config (used by main.py / CLI)
+            ds_cfg = get_dataset_config(self.config.dataset)
+            n_channel = ds_cfg["n_channel"]
+            model_type = getattr(self.config, "model_type", "PixelCNN")
+            model_class = MODEL_REGISTRY.get(model_type, PixelCNN)
+
+            if model_type == "PixelRNN":
+                self.model = model_class(
+                    n_channel=n_channel, h=h, n_block=n_block
+                ).to(self.device)
+            elif model_type == "GatedPixelCNN":
+                self.model = model_class(
+                    in_channels=n_channel,
+                    channels=self.config.h,
+                    n_layers=self.config.n_block,
+                ).to(self.device)
+            else:
+                self.model = model_class(
+                    n_channel=n_channel,
+                    h=self.config.h,
+                    n_block=self.config.n_block,
+                ).to(self.device)
+
         print(self.model, "\n")
 
         if self.config.mode == "train":
