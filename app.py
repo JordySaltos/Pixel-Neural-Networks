@@ -325,25 +325,57 @@ def show_completion():
     st.write("Select a real image from the test dataset. We will mask the bottom half "
              "and let the model generate possible completions.")
 
-# Load full test dataset
-    full_loader = get_loader("./dataset", batch_size=10000, train=False, dataset_name=dataset)
-    test_images, test_labels = next(iter(full_loader))
+    loader_key = f"test_images_{dataset}"
+    if loader_key not in st.session_state:
+        full_loader = get_loader("./dataset", batch_size=10000, train=False, dataset_name=dataset)
+        imgs, lbls = next(iter(full_loader))
+        st.session_state[loader_key] = (imgs, lbls)
+    test_images, test_labels = st.session_state[loader_key]
+
+    CIFAR10_CLASSES = [
+        "airplane", "automobile", "bird", "cat", "deer",
+        "dog", "frog", "horse", "ship", "truck",
+    ]
 
     col1, col2 = st.columns([1, 2])
     with col1:
-        chosen_digit = st.selectbox("Select a digit (0–9)", list(range(10)))
-        matching_indices = (test_labels == chosen_digit).nonzero(as_tuple=True)[0]
+        if dataset == "MNIST":
+            chosen_class = st.selectbox("Select a digit (0–9)", list(range(10)))
+            class_label  = str(chosen_class)
+            matching_indices = (test_labels == chosen_class).nonzero(as_tuple=True)[0]
+            if len(matching_indices) == 0:
+                st.warning(f"No images found for digit {chosen_class}.")
+                return
+            img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
+        else:
+            if dataset == "CIFAR10":
+                chosen_class = st.selectbox("Select a class", CIFAR10_CLASSES)
+                class_idx    = CIFAR10_CLASSES.index(chosen_class)
+                class_label  = chosen_class
+                matching_indices = (test_labels == class_idx).nonzero(as_tuple=True)[0]
+                if len(matching_indices) == 0:
+                    st.warning(f"No images found for class '{chosen_class}'.")
+                    return
+                img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
+            else:
+                # Generic fallback: fully random image
+                class_label = "random"
+                img_idx = torch.randint(len(test_images), (1,)).item()
 
-        if len(matching_indices) == 0:
-            st.warning(f"No images found for digit {chosen_digit}.")
-            return
+        if st.button("Pick another image", key="resample_img"):
+            del st.session_state[loader_key]
+            st.rerun()
 
-        # Pick a random image among all examples of the chosen digit
-        img_idx = matching_indices[torch.randint(len(matching_indices), (1,)).item()].item()
     with col2:
         n_completions = st.slider("Number of variations to generate", 1, 10, 1)
 
     real_image = test_images[img_idx:img_idx+1].to(DEVICE)
+    preview = real_image.cpu().squeeze(0).permute(1, 2, 0).numpy()
+    preview = np.clip(preview, 0, 1)
+    if preview.shape[2] == 1:
+        preview = preview[:, :, 0]
+    cmap_preview = "gray" if get_dataset_config(dataset)["n_channel"] == 1 else None
+    col1.image(preview, caption=f"Selected: {class_label}", use_container_width=True, clamp=True)
 
     if st.button("Autocomplete bottom half"):
         with st.spinner("Generating pixel by pixel... (this may take a while)"):
