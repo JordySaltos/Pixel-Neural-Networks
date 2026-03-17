@@ -334,6 +334,11 @@ def sample_images(
                     generated[:, ch, i, j] = pixel
     return generated
 
+    # Read architecture params saved during training
+    saved = read_config_from_results()
+    dataset  = saved.get("dataset", "CIFAR10")
+    h        = int(saved.get("h", 128))
+    n_block  = int(saved.get("n_block", 15))
 
 def sample_conditional(
     model: torch.nn.Module,
