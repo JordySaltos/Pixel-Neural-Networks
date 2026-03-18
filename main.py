@@ -1,4 +1,5 @@
-"""CLI entry point for training a Pixel Neural Network.
+"""
+CLI entry point for training a Pixel Neural Network.
 
 Usage::
 
@@ -11,16 +12,17 @@ from pathlib import Path
 from Configuration import BaseConfig
 from Loader import get_loader
 from train import Solver
- 
- 
+
+
 def create_dataloaders(config):
-    """Build train and test DataLoaders from a BaseConfig.
+    """
+    Build train and test DataLoaders from a BaseConfig.
 
     Args:
-        config: An initialised BaseConfig instance.
+        config: An initialised BaseConfig instance
 
     Returns:
-        A ``(train_loader, test_loader)`` tuple.
+        tuple: (train_loader, test_loader)
     """
     dataset_dir = Path(".") / "dataset" / config.dataset
     train_loader = get_loader(
@@ -36,18 +38,19 @@ def create_dataloaders(config):
         dataset_name=config.dataset,
     )
     return train_loader, test_loader
- 
- 
+
+
 def run_training(config, train_loader, test_loader):
-    """Instantiate a Solver, build the model, and run the training loop.
+    """
+    Instantiate a Solver, build the model, and run the training loop.
 
     Args:
-        config: An initialised BaseConfig instance.
-        train_loader: DataLoader for the training split.
-        test_loader: DataLoader for the validation split.
+        config: An initialised BaseConfig instance
+        train_loader: DataLoader for training data
+        test_loader: DataLoader for validation/test data
 
     Returns:
-        The trained Solver instance.
+        Solver: The trained Solver instance
     """
     solver = Solver(config, train_loader=train_loader, test_loader=test_loader)
     print(config)
@@ -55,14 +58,19 @@ def run_training(config, train_loader, test_loader):
     solver.build()
     solver.train()
     return solver
- 
- 
+
+
 def main() -> None:
-    """Parse CLI arguments, build data loaders, and start training."""
+    """
+    Parse CLI arguments, build data loaders, and start the training loop.
+
+    Returns:
+        None
+    """
     config = BaseConfig().initialize()
     train_loader, test_loader = create_dataloaders(config)
     run_training(config, train_loader, test_loader)
- 
- 
+
+
 if __name__ == "__main__":
     main()

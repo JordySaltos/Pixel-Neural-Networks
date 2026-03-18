@@ -18,17 +18,18 @@ MODEL_REGISTRY = {
 
 class Solver(object):
     """
-    Main class that manages the training, evaluation and sampling
-    procedures for the PixelCNN model.
+    Main class to manage training, evaluation and sampling
+    procedures for PixelCNN models.
     """
 
     def __init__(self, config, train_loader, test_loader):
-        """Initialise the Solver with data loaders and configuration.
+        """
+        Initialise the Solver with data loaders and configuration.
 
         Args:
-            config: A BaseConfig instance with all training hyper-parameters.
-            train_loader: DataLoader for the training split.
-            test_loader: DataLoader for the validation/test split.
+            config: BaseConfig instance with training hyper-parameters
+            train_loader: DataLoader for training data
+            test_loader: DataLoader for validation/test data
         """
         self.config = config
         self.train_loader = train_loader
@@ -45,19 +46,14 @@ class Solver(object):
 
     def build(self, model_override=None):
         """
-        Builds the model using architecture params from config,
-        or uses the externally supplied `model_override` instance.
-        Then initializes optimizer and loss function.
+        Build the model from configuration or use an external instance.
 
         Args:
-            model_override: an already-instantiated nn.Module to use instead
-                            of the default PixelCNN. Used by app.py when the
-                            user selects PixelRNN or GatedPixelCNN.
+            model_override: Optional nn.Module instance to use instead of default
         """
         if model_override is not None:
             self.model = model_override.to(self.device)
         else:
-            # Default: build from config (used by main.py / CLI)
             ds_cfg = get_dataset_config(self.config.dataset)
             n_channel = ds_cfg["n_channel"]
             model_type = getattr(self.config, "model_type", "PixelCNN")
@@ -89,7 +85,6 @@ class Solver(object):
                 self.model.parameters(),
                 lr=getattr(self.config, "lr", 1e-3),
             )
-            # Reduce LR by 0.5 if val loss does not improve for 3 epochs
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
                 self.optimizer, mode="min", factor=0.5, patience=3
             )
@@ -97,8 +92,7 @@ class Solver(object):
 
     def train(self):
         """
-        Runs the full training loop across all epochs.
-        Saves model weights to the checkpoint directory at the end.
+        Run the training loop over all epochs and save model weights.
         """
         for epoch in trange(self.config.n_epochs, desc="Epoch", ncols=80):
             epoch += 1
@@ -148,8 +142,15 @@ class Solver(object):
         torch.save(self.model.state_dict(), weights_path)
         tqdm.write(f"Model saved to {weights_path}")
 
-    def test(self, epoch):
-        """Evaluates the model on the test set. Returns mean test loss."""
+    def test(self, epoch) -> float:
+        """
+        Evaluate the model on the test set.
+
+        Args:
+            epoch: Current epoch number (used for logging)
+        Returns:
+            float: Mean test loss
+        """
         test_losses = []
         start_time = time.time()
         self.model.eval()
@@ -169,10 +170,14 @@ class Solver(object):
         )
         return mean_loss
 
-    def sample(self, epoch):
+    def sample(self, epoch) -> str:
         """
-        Generates images pixel-by-pixel and saves them to the checkpoint dir.
-        Returns the path of the saved image.
+        Generate images pixel-by-pixel and save them to checkpoint directory.
+
+        Args:
+            epoch: Current epoch number (used for filename)
+        Returns:
+            str: Path to saved image
         """
         image_path = str(self.config.ckpt_dir / f"epoch-{epoch}.png")
         tqdm.write(f"Saving sampled images at {image_path}")

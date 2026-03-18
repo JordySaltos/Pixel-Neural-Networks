@@ -15,12 +15,34 @@ results_dir.mkdir(exist_ok=True)
 
 
 def get_optimizer(name="Adam"):
-    """Returns a PyTorch optimizer class given its name."""
+    """
+    Return a PyTorch optimizer class by its name.
+
+    Args:
+        name (str): Name of the optimizer (e.g., "Adam", "RMSprop").
+
+    Returns:
+        torch.optim.Optimizer: Corresponding PyTorch optimizer class.
+    """
     return getattr(torch.optim, name)
 
 
 def str2bool(value):
-    """Converts common string representations into boolean values."""
+    """
+    Convert a string to a boolean.
+
+    Common string representations for True: 'yes', 'true', 't', 'y', '1'  
+    Common string representations for False: 'no', 'false', 'f', 'n', '0'
+
+    Args:
+        value (str): Input string.
+
+    Returns:
+        bool: Converted boolean value.
+
+    Raises:
+        argparse.ArgumentTypeError: If the string cannot be interpreted as a boolean.
+    """
     value = value.lower()
     if value in ("yes", "true", "t", "y", "1"):
         return True
@@ -31,17 +53,18 @@ def str2bool(value):
 
 class BaseConfig(object):
     """
-    Base configuration class.
+    Base configuration class for experiments.
 
-    Handles parsing CLI arguments, preparing dataset paths,
-    and creating directories for experiment results.
+    Handles parsing command-line arguments, setting up dataset paths,
+    creating experiment directories, and saving configuration files.
     """
 
     def __init__(self):
+        """Initialize the BaseConfig by building the argument parser."""
         self._build_parser()
 
     def _build_parser(self) -> None:
-        """Build the argparse parser and store it on self.parser."""
+        """Build the argparse parser with default experiment parameters."""
         parser = argparse.ArgumentParser()
 
         parser.add_argument("--mode", type=str, default="train")
@@ -75,20 +98,27 @@ class BaseConfig(object):
         self.parser = parser
 
     def parse(self) -> None:
-        """Hook for subclasses to add extra arguments before parsing."""
+        """
+        Hook method for subclasses to add extra arguments before parsing.
+
+        Can be overridden by subclasses if additional CLI arguments
+        are needed.
+        """
         pass
 
     def initialize(self, parse=True, **extra_kwargs):
-        """Parse arguments, apply extra keyword overrides, and set up directories.
+        """
+        Parse CLI arguments, override with extra kwargs, and set up directories.
 
         Args:
-            parse: If True, parse CLI arguments (set False when called from
-                the Streamlit UI to avoid argparse conflicts).
-            **extra_kwargs: Key-value pairs that override parsed arguments
-                (e.g. ``dataset="MNIST"``, ``lr=3e-4``).
+            parse (bool): Whether to parse command-line arguments.
+                Set False when using this class in a GUI (e.g., Streamlit)
+                to avoid argparse conflicts.
+            **extra_kwargs: Keyword arguments that override parsed CLI args
+                (e.g., dataset="MNIST", lr=0.001).
 
         Returns:
-            self (for chaining).
+            BaseConfig: Self, fully initialized and ready for use.
         """
         self.parse()
 
@@ -120,7 +150,10 @@ class BaseConfig(object):
         return self
 
     def _save_config(self) -> None:
-        """Write all configuration attributes to ``config.txt`` in ckpt_dir."""
+        """
+        Save all configuration attributes to a 'config.txt' file
+        in the checkpoint directory.
+        """
         config_file = self.ckpt_dir / "config.txt"
         with open(config_file, "w") as f:
             f.write("Configurations\n")
@@ -129,17 +162,23 @@ class BaseConfig(object):
             f.write("End\n")
 
     def __repr__(self) -> str:
-        """Return a human-readable summary of the configuration."""
+        """
+        Return a human-readable string representation of the configuration.
+
+        Returns:
+            str: Pretty-printed configuration dictionary.
+        """
         return "Configurations\n" + pprint.pformat(self.__dict__)
 
 
 def get_config(parse=True) -> "BaseConfig":
-    """Convenience factory: create and initialise a BaseConfig.
+    """
+    Convenience factory to create and initialize a BaseConfig instance.
 
     Args:
-        parse: Whether to parse CLI arguments.
+        parse (bool): Whether to parse command-line arguments.
 
     Returns:
-        An initialised BaseConfig instance.
+        BaseConfig: Initialized configuration object.
     """
     return BaseConfig().initialize(parse=parse)

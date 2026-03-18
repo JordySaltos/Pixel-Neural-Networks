@@ -1,4 +1,3 @@
-
 from torchvision import datasets, transforms
 from torch.utils.data import DataLoader
 
@@ -30,19 +29,24 @@ def get_loader(directory="./dataset",
                num_workers=0,
                pin_memory=True):
     """
-    Creates a DataLoader for the chosen dataset (CIFAR10 or MNIST).
+    Create a PyTorch DataLoader for a given dataset.
 
     Args:
-        directory: root path where datasets are stored. Torchvision will
-                   create a subdirectory named after the dataset automatically,
-                   so pass the project-level dataset root (e.g. "./dataset"),
-                   NOT a path that already includes the dataset name.
-        batch_size: number of images per batch
-        train: whether to load the training or test set
-        dataset_name: "CIFAR10" or "MNIST"
-        num_workers: number of worker processes for data loading.
-                     Defaults to 0 for Windows compatibility (avoids spawn issues).
-        pin_memory: useful when training on GPU
+        directory (str): Root path where datasets are stored. The dataset
+            loader will create a subfolder with the dataset name automatically.
+        batch_size (int): Number of images per batch.
+        train (bool): Whether to load the training split (True) or test split (False).
+        dataset_name (str): Name of the dataset to load ("CIFAR10" or "MNIST").
+        num_workers (int): Number of subprocesses to use for data loading.
+            Defaults to 0 (useful for Windows).
+        pin_memory (bool): If True, the data loader will copy tensors into CUDA
+            pinned memory before returning them. Useful when training on GPU.
+
+    Returns:
+        DataLoader: PyTorch DataLoader for the specified dataset.
+
+    Raises:
+        ValueError: If dataset_name is not supported.
     """
     import os
     from pathlib import Path
@@ -77,7 +81,22 @@ def get_loader(directory="./dataset",
 
 
 def get_dataset_config(dataset_name: str) -> dict:
-    """Returns the config dict (n_channel, img_size) for the given dataset."""
+    """
+    Retrieve configuration parameters for a dataset.
+
+    Args:
+        dataset_name (str): Name of the dataset ("CIFAR10" or "MNIST").
+
+    Returns:
+        dict: Dictionary containing dataset parameters:
+            - 'n_channel': number of channels in the images
+            - 'img_size': image height and width
+            - 'transform': torchvision transform applied to the dataset
+            - 'loader': torchvision dataset class
+
+    Raises:
+        ValueError: If dataset_name is not recognized.
+    """
     if dataset_name not in DATASET_CONFIGS:
         raise ValueError(f"Unknown dataset '{dataset_name}'.")
     return DATASET_CONFIGS[dataset_name]
