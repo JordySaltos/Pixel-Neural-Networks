@@ -217,19 +217,133 @@ class GatedActivation(nn.Module):
         return torch.tanh(a) * torch.sigmoid(b)
 
 
-class Encoder(nn.Module):
+import torch
+import torch.nn as nn
+
+class VerticalStack(nn.Module):
     """
-    Convolutional encoder mapping images to latent vector.
+    Causal vertical convolution stack for GatedPixelCNN.
+
+    Pads (kernel_size - 1) rows on the top only so the convolution cannot
+    attend to any row below the current position.
 
     Args:
-        in_channels (int): Input channels
-        latent_dim (int): Latent vector dimension
-
-    Returns:
-        Tensor: Latent vectors [B, latent_dim]
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels (before gating; the conv
+            produces 2 * out_channels which GatedActivation halves).
+        kernel_size (int): Spatial kernel size (default 3).
     """
 
-    def __init__(self, in_channels=3, latent_dim=128):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
+        super().__init__()
+        self.pad_top = kernel_size - 1
+        self.pad_h = kernel_size // 2  # symmetric horizontal padding
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2 * out_channels,
+            kernel_size=(kernel_size, kernel_size),
+            padding=(0, self.pad_h),  # vertical handled manually
+        )
+
+        self.gate = GatedActivation()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply causal top-padding, convolution, and gated activation."""
+        x = nn.functional.pad(x, (0, 0, self.pad_top, 0))
+        x = self.conv(x)
+        x = self.gate(x)
+        return x
+
+
+class HorizontalStack(nn.Module):
+    """
+    Causal horizontal convolution stack for GatedPixelCNN.
+
+    Pads (kernel_size - 1) columns on the left only so the convolution
+    cannot attend to pixels to the right of the current position.
+    Also projects the vertical-stack output and adds it before gating.
+
+    Args:
+        in_channels (int): Number of input channels.
+        out_channels (int): Number of output channels.
+        kernel_size (int): Spatial kernel size (default 3).
+    """
+
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
+        super().__init__()
+        self.pad_left = kernel_size - 1
+
+        self.conv = nn.Conv2d(
+            in_channels,
+            2 * out_channels,
+            kernel_size=(1, kernel_size),
+            padding=(0, 0)  # horizontal handled manually
+        )
+
+        self.gate = GatedActivation()
+        self.v_to_h = nn.Conv2d(out_channels, 2 * out_channels, kernel_size=1)
+        self.residual = nn.Conv2d(out_channels, out_channels, kernel_size=1)
+
+    def forward(self, h: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
+        """
+        Apply causal left-padding, fuse vertical output, gate, and add residual.
+
+        Args:
+            h (Tensor): Horizontal input feature map [B, C, H, W]
+            v (Tensor): Vertical feature map from VerticalStack [B, C, H, W]
+
+        Returns:
+            Tensor: Output feature map [B, C, H, W]
+        """
+        h_out = nn.functional.pad(h, (self.pad_left, 0, 0, 0))
+        h_out = self.conv(h_out)
+        v_proj = self.v_to_h(v)
+        h_out = self.gate(h_out + v_proj)
+        return self.residual(h_out) + h
+
+
+class GatedPixelCNNBlock(nn.Module):
+    """
+    One layer of a Gated PixelCNN combining vertical and horizontal stacks.
+
+    Args:
+        channels (int): Number of feature channels (same for input and output).
+    """
+
+    def __init__(self, channels: int):
+        super().__init__()
+        self.vertical = VerticalStack(channels, channels)
+        self.horizontal = HorizontalStack(channels, channels)
+
+    def forward(self, v: torch.Tensor, h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Run one gated block.
+
+        Args:
+            v (Tensor): Vertical input [B, C, H, W]
+            h (Tensor): Horizontal input [B, C, H, W]
+
+        Returns:
+            tuple: Updated (v_out, h_out)
+        """
+        v_out = self.vertical(v)
+        h_out = self.horizontal(h, v_out)
+        return v_out, h_out
+
+
+class Encoder(nn.Module):
+    """
+    Convolutional encoder mapping an image to a latent vector.
+
+    Used as the conditioning encoder in PixelCNNAutoencoder.
+
+    Args:
+        in_channels (int): Number of input image channels.
+        latent_dim (int): Dimensionality of the output latent vector.
+    """
+
+    def __init__(self, in_channels: int = 3, latent_dim: int = 128):
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(in_channels, 64, 4, 2, 1),
@@ -243,7 +357,15 @@ class Encoder(nn.Module):
         self.fc = nn.Linear(256, latent_dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Encode image batch to latent vectors."""
+        """
+        Encode an image batch to latent vectors.
+
+        Args:
+            x (Tensor): Input images [B, C, H, W]
+
+        Returns:
+            Tensor: Latent vectors [B, latent_dim]
+        """
         x = self.net(x)
         x = x.view(x.size(0), -1)
         z = self.fc(x)
