@@ -1,7 +1,7 @@
-app module
-==========
+Loader module
+=============
 
-.. automodule:: app
+.. automodule:: Loader
    :members:
    :show-inheritance:
    :undoc-members:

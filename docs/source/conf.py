@@ -1,32 +1,25 @@
 import os
 import sys
-
-sys.path.insert(0, os.path.abspath("../.."))
-
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+sys.path.insert(0, os.path.abspath('../..'))  # añade la raíz del proyecto
 
 # -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "methodes-ia"
-copyright = "2025, Guillermo Durand"
-author = "Guillermo Durand"
-release = "0.0.2"
+project = 'Pixel Neural Networks'
+author = 'Tu Nombre'
+release = '1.0'
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.napoleon"]
+extensions = [
+    'sphinx.ext.autodoc',    # genera documentación a partir de docstrings
+    'sphinx.ext.napoleon',   # soporta Google / NumPy style docstrings
+    'sphinx.ext.viewcode',   # enlaces al código fuente
+]
 
-templates_path = ["_templates"]
+templates_path = ['_templates']
 exclude_patterns = []
 
-
 # -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "alabaster"
-html_static_path = ["_static"]
+html_theme = 'sphinx_rtd_theme'
+html_static_path = ['_static']

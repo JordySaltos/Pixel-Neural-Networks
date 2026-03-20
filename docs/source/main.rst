@@ -1,7 +1,7 @@
-app module
-==========
+main module
+===========
 
-.. automodule:: app
+.. automodule:: main
    :members:
    :show-inheritance:
    :undoc-members:

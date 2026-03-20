@@ -6,6 +6,7 @@ class MaskedConv(nn.Conv2d):
     2D convolution with causal masking for PixelCNN.
 
     Implements two mask types:
+
     - Type 'A': excludes the center pixel and all subsequent pixels in raster scan order.
       Used in the first layer to ensure predictions do not depend on themselves.
     - Type 'B': includes the center pixel but excludes subsequent ones.
@@ -72,7 +73,9 @@ class ResidualBlock(nn.Module):
     Residual PixelCNN block with bottleneck pattern.
 
     Architecture:
+    
         2h -> h (1x1) -> h (3x3 masked B) -> 2h (1x1)
+        
     Includes residual skip connection.
 
     Args:

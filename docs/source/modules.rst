@@ -1,12 +1,14 @@
-methodes-ia
-===========
+Pixel-Neural-Networks
+=====================
 
 .. toctree::
    :maxdepth: 4
 
+   Configuration
+   Loader
    app
-   dl
-   plotly_events
-   sandbox
-   utils
-   viz
+   architecture
+   main
+   model
+   train
+

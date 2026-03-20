@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../..'))  # añade la raíz del proyecto
-
+  # añade la raíz del proyecto
+sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Pixel Neural Networks'

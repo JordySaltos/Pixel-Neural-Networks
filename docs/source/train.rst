@@ -1,7 +1,7 @@
-app module
-==========
+train module
+============
 
-.. automodule:: app
+.. automodule:: train
    :members:
    :show-inheritance:
    :undoc-members:
