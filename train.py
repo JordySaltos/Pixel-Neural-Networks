@@ -34,13 +34,8 @@ class Solver(object):
         self.config = config
         self.train_loader = train_loader
         self.test_loader = test_loader
-
         self.num_batches_per_epoch = len(self.train_loader)
-        self.dataset_size = len(self.train_loader.dataset)
-
-        self.is_train = self.config.isTrain
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
         self.train_losses = []
         self.test_losses = []
 
@@ -67,9 +62,9 @@ class Solver(object):
                 ).to(self.device)
             elif model_type == "GatedPixelCNN":
                 self.model = model_class(
-                    in_channels=n_channel,
-                    channels=self.config.h,
-                    n_layers=self.config.n_block,
+                    n_channel=n_channel,
+                    h=self.config.h,
+                    n_block=self.config.n_block,
                 ).to(self.device)
             else:
                 self.model = model_class(
@@ -84,9 +79,6 @@ class Solver(object):
             self.optimizer = self.config.optimizer(
                 self.model.parameters(),
                 lr=getattr(self.config, "lr", 1e-3),
-            )
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.5, patience=3
             )
             self.criterion = nn.CrossEntropyLoss()
 
@@ -124,8 +116,9 @@ class Solver(object):
 
                 if batch_index > 1 and batch_index % self.config.log_interval == 0:
                     tqdm.write(
-                        f"Epoch: {epoch} | Batch: ({batch_index}/{self.num_batches_per_epoch})"
-                        f" | Loss: {loss_value:.3f}"
+                        f"Epoch: {epoch} | "
+                    f"Batch: ({batch_index}/{self.num_batches_per_epoch})"
+                    f" | Loss: {loss_value:.3f}"
                     )
 
             epoch_loss = float(np.mean(batch_losses))
@@ -134,7 +127,6 @@ class Solver(object):
 
             test_loss = self.test(epoch)
             self.test_losses.append(test_loss)
-            self.scheduler.step(test_loss)  
 
             self.sample(epoch)
 
@@ -186,21 +178,26 @@ class Solver(object):
 
         ds_cfg = get_dataset_config(self.config.dataset)
         n_channel = ds_cfg["n_channel"]
-        img_size = ds_cfg["img_size"]   # always 32 after padding
-
-        n_samples = self.config.batch_size
+        img_size = ds_cfg["img_size"]   
+        n_samples = min(self.config.batch_size, 8)
         generated_images = torch.zeros(
             n_samples, n_channel, img_size, img_size
         ).to(self.device)
+
+        temperature = getattr(self.config, "sampling_temperature", 0.9)
 
         with torch.no_grad():
             for i in trange(img_size, desc="Sampling Height", leave=False, ncols=80):
                 for j in range(img_size):
                     output = self.model(generated_images)
-                    probabilities = F.softmax(output[:, :, i, j], dim=2)
+                    probabilities = F.softmax(
+                        output[:, :, i, j] / temperature, dim=2
+                    )
                     for channel in range(n_channel):
                         sampled_pixel = (
-                            torch.multinomial(probabilities[:, channel], 1).float() / 255.0
+                            torch.multinomial(
+                                probabilities[:, channel], 1
+                            ).float() / 255.0
                         ).squeeze(-1)
                         generated_images[:, channel, i, j] = sampled_pixel
 

@@ -53,7 +53,8 @@ def get_loader(directory="./dataset",
 
     if dataset_name not in DATASET_CONFIGS:
         raise ValueError(
-            f"Unknown dataset '{dataset_name}'. Choose from {list(DATASET_CONFIGS.keys())}."
+            f"Unknown dataset '{dataset_name}'. "
+            f"Choose from {list(DATASET_CONFIGS.keys())}."
         )
 
     cfg = DATASET_CONFIGS[dataset_name]

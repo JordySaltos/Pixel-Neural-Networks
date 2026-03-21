@@ -35,7 +35,7 @@ This project implements three variants:
 
 ##  Installation
 
-    git clone https://github.com/JuancarlosPG2004/Pixel-Neural-Networks.git
+    git clone https://github.com/JordySaltos/Pixel-Neural-Networks.git
     cd Pixel-Neural-Networks
     pip install torch torchvision tqdm numpy
 

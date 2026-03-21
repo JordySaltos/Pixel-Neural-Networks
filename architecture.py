@@ -7,7 +7,8 @@ class MaskedConv(nn.Conv2d):
 
     Implements two mask types:
 
-    - Type 'A': excludes the center pixel and all subsequent pixels in raster scan order.
+    - Type 'A': excludes the center pixel and all subsequent pixels
+      in raster scan order.
       Used in the first layer to ensure predictions do not depend on themselves.
     - Type 'B': includes the center pixel but excludes subsequent ones.
       Used in residual layers to allow self-connection.
@@ -16,14 +17,20 @@ class MaskedConv(nn.Conv2d):
         mask_type (str): 'A' or 'B'
         c_in (int): Number of input channels
         c_out (int): Number of output channels
-        k_size (int): Kernel size
+        kernel_size (int): Kernel size
         stride (int): Stride
         pad (int): Padding
     """
 
-    def __init__(self, mask_type: str, c_in: int, c_out: int, k_size: int, stride: int, pad: int):
-        super().__init__(c_in, c_out, k_size, stride, pad, bias=False)
-        assert mask_type in ('A', 'B'), f"mask_type must be 'A' or 'B', got '{mask_type}'"
+    def __init__(
+        self, mask_type: str, c_in: int, c_out: int,
+        kernel_size: int, stride: int, pad: int
+    ):
+        """Initialise the masked convolution and register the causal mask buffer."""
+        super().__init__(c_in, c_out, kernel_size, stride, pad, bias=False)
+        assert mask_type in ('A', 'B'), (
+            f"mask_type must be 'A' or 'B', got '{mask_type}'"
+        )
         self.mask_type = mask_type
 
         ch_out, ch_in, height, width = self.weight.size()
@@ -39,8 +46,7 @@ class MaskedConv(nn.Conv2d):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply masked convolution to input tensor x."""
-        with torch.no_grad():
-            self.weight.data.copy_(self.weight.data * self.mask)
+        self.weight.data.mul_(self.mask)
         return super().forward(x)
 
 
@@ -51,15 +57,19 @@ class FirstBlock(nn.Module):
     Args:
         c_in (int): Input channels
         c_out (int): Output channels
-        k_size (int): Kernel size
+        kernel_size (int): Kernel size
         stride (int): Stride
         pad (int): Padding
     """
 
-    def __init__(self, c_in: int = 3, c_out: int = 256, k_size: int = 7, stride: int = 1, pad: int = 3):
+    def __init__(
+        self, c_in: int = 3, c_out: int = 256,
+        kernel_size: int = 7, stride: int = 1, pad: int = 3
+    ):
+        """Initialise the type-A masked convolution and batch normalisation."""
         super().__init__()
         self.block = nn.Sequential(
-            MaskedConv('A', c_in, c_out, k_size, stride, pad),
+            MaskedConv('A', c_in, c_out, kernel_size, stride, pad),
             nn.BatchNorm2d(c_out)
         )
 
@@ -73,26 +83,27 @@ class ResidualBlock(nn.Module):
     Residual PixelCNN block with bottleneck pattern.
 
     Architecture:
-    
+
         2h -> h (1x1) -> h (3x3 masked B) -> 2h (1x1)
-        
+
     Includes residual skip connection.
 
     Args:
         h (int): Bottleneck dimension
-        k_size (int): Kernel size
+        kernel_size (int): Kernel size
         stride (int): Stride
         pad (int): Padding
     """
 
-    def __init__(self, h: int = 128, k_size: int = 3, stride: int = 1, pad: int = 1):
+    def __init__(self, h: int = 128, kernel_size: int = 3, stride: int = 1, pad: int = 1):
+        """Initialise the bottleneck residual block layers."""
         super().__init__()
         self.block = nn.Sequential(
             nn.ReLU(inplace=True),
             nn.Conv2d(2 * h, h, kernel_size=1),
             nn.BatchNorm2d(h),
             nn.ReLU(inplace=True),
-            MaskedConv('B', h, h, k_size, stride, pad),
+            MaskedConv('B', h, h, kernel_size, stride, pad),
             nn.BatchNorm2d(h),
             nn.ReLU(inplace=True),
             nn.Conv2d(h, 2 * h, kernel_size=1),
@@ -115,6 +126,7 @@ class FinalBlock(nn.Module):
     """
 
     def __init__(self, n_channel: int = 3, h: int = 128, discrete_channel: int = 256):
+        """Initialise the output projection layers."""
         super().__init__()
         self.block = nn.Sequential(
             nn.ReLU(inplace=True),
@@ -141,9 +153,13 @@ class RowLSTM(nn.Module):
     """
 
     def __init__(self, in_channels, hidden_channels):
+        """Initialise the causal (3,1) convolution used for gate computation."""
         super().__init__()
         self.hidden_channels = hidden_channels
-        self.conv = nn.Conv2d(in_channels, 4 * hidden_channels, kernel_size=(3,1), padding=(0,0))
+        self.conv = nn.Conv2d(
+            in_channels, 4 * hidden_channels,
+            kernel_size=(3, 1), padding=(0, 0),
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -186,9 +202,12 @@ class ResidualRowLSTMBlock(nn.Module):
     """
 
     def __init__(self, in_out_channels):
+        """Initialise the RowLSTM and the 1x1 projection convolution."""
         super().__init__()
         internal_channels = in_out_channels // 2
-        self.row_lstm = RowLSTM(in_channels=in_out_channels, hidden_channels=internal_channels)
+        self.row_lstm = RowLSTM(
+            in_channels=in_out_channels, hidden_channels=internal_channels
+        )
         self.conv1x1 = nn.Conv2d(internal_channels, in_out_channels, kernel_size=1)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -220,8 +239,6 @@ class GatedActivation(nn.Module):
         return torch.tanh(a) * torch.sigmoid(b)
 
 
-import torch
-import torch.nn as nn
 
 class VerticalStack(nn.Module):
     """
@@ -238,6 +255,7 @@ class VerticalStack(nn.Module):
     """
 
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
+        """Initialise padding constants and the gated convolution."""
         super().__init__()
         self.pad_top = kernel_size - 1
         self.pad_h = kernel_size // 2  # symmetric horizontal padding
@@ -274,6 +292,7 @@ class HorizontalStack(nn.Module):
     """
 
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3):
+        """Initialise the causal horizontal convolution and projection layers."""
         super().__init__()
         self.pad_left = kernel_size - 1
 
@@ -315,11 +334,14 @@ class GatedPixelCNNBlock(nn.Module):
     """
 
     def __init__(self, channels: int):
+        """Initialise the vertical and horizontal stack sub-modules."""
         super().__init__()
         self.vertical = VerticalStack(channels, channels)
         self.horizontal = HorizontalStack(channels, channels)
 
-    def forward(self, v: torch.Tensor, h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def forward(
+        self, v: torch.Tensor, h: torch.Tensor
+    ) -> tuple:
         """
         Run one gated block.
 
@@ -347,6 +369,7 @@ class Encoder(nn.Module):
     """
 
     def __init__(self, in_channels: int = 3, latent_dim: int = 128):
+        """Initialise the convolutional backbone and the linear projection."""
         super().__init__()
         self.net = nn.Sequential(
             nn.Conv2d(in_channels, 64, 4, 2, 1),

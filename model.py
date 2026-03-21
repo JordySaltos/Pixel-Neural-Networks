@@ -23,13 +23,14 @@ class PixelCNN(nn.Module):
 
     def __init__(self, n_channel: int = 3, h: int = 128,
                  discrete_channel: int = 256, n_block: int = 15):
+        """Initialise first block, residual blocks, and final projection."""
         super().__init__()
         self.discrete_channel = discrete_channel
         self.n_block = n_block
 
-        self.first_block = FirstBlock(n_channel, 2 * h, k_size=7, stride=1, pad=3)
+        self.first_block = FirstBlock(n_channel, 2 * h, kernel_size=7, stride=1, pad=3)
         self.res_blocks = nn.ModuleList(
-            [ResidualBlock(h, k_size=3, stride=1, pad=1) for _ in range(n_block)]
+            [ResidualBlock(h, kernel_size=3, stride=1, pad=1) for _ in range(n_block)]
         )
         self.final_block = FinalBlock(n_channel, h, discrete_channel)
 
@@ -72,11 +73,12 @@ class PixelRNN(nn.Module):
     """
 
     def __init__(self, n_channel=3, h=32, n_block=12, discrete_channel=256):
+        """Initialise the type-A masked conv, Row-LSTM blocks, and output head."""
         super(PixelRNN, self).__init__()
 
         self.discrete_channel = discrete_channel
 
-        self.MaskAConv = MaskedConv('A', n_channel, 2 * h, k_size=7, stride=1, pad=3)
+        self.MaskAConv = MaskedConv('A', n_channel, 2 * h, kernel_size=7, stride=1, pad=3)
         block_residual = []
 
         for i in range(n_block):
@@ -90,7 +92,11 @@ class PixelRNN(nn.Module):
             nn.Conv2d(2 * h, 1024, kernel_size=1, stride=1, padding=0),
             nn.BatchNorm2d(1024),
             nn.ReLU(),
-            nn.Conv2d(1024, n_channel * discrete_channel, kernel_size=1, stride=1, padding=0))
+            nn.Conv2d(
+                1024, n_channel * discrete_channel,
+                kernel_size=1, stride=1, padding=0,
+            )
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -122,26 +128,27 @@ class GatedPixelCNN(nn.Module):
     the left on the current row) and combining them via a learned projection.
 
     Args:
-        in_channels (int): Number of image channels
-        channels (int): Number of feature channels throughout the network
-        n_layers (int): Number of GatedPixelCNNBlock layers
+        n_channel (int): Number of image channels
+        h (int): Number of feature channels throughout the network
+        n_block (int): Number of GatedPixelCNNBlock layers
     """
 
-    def __init__(self, in_channels=3, channels=64, n_layers=12):
+    def __init__(self, n_channel=3, h=64, n_block=12):
+        """Initialise input conv, gated blocks, and output projection."""
         super().__init__()
 
-        self.in_channels = in_channels  # store to reshape output correctly
+        self.n_channel = n_channel  # store to reshape output correctly
 
-        self.input_conv = MaskedConv('A', in_channels, channels,
-                                     k_size=7, stride=1, pad=3)
+        self.input_conv = MaskedConv('A', n_channel, h,
+                                     kernel_size=7, stride=1, pad=3)
 
         self.blocks = nn.ModuleList(
-            [GatedPixelCNNBlock(channels) for _ in range(n_layers)]
+            [GatedPixelCNNBlock(h) for _ in range(n_block)]
         )
 
         self.out = nn.Sequential(
             nn.ReLU(inplace=True),
-            nn.Conv2d(channels, in_channels * 256, 1),
+            nn.Conv2d(h, n_channel * 256, 1),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -162,7 +169,7 @@ class GatedPixelCNN(nn.Module):
         x = self.out(h)
         B, _, H, W = x.shape
 
-        x = x.view(B, self.in_channels, 256, H, W)
+        x = x.view(B, self.n_channel, 256, H, W)
         x = x.permute(0, 1, 3, 4, 2)  # [B, C, H, W, 256]
 
         return x
@@ -183,6 +190,7 @@ class ConditionalPixelCNN(PixelCNN):
     """
 
     def __init__(self, n_channel=3, h=32, latent_dim=128, discrete_channel=256):
+        """Initialise the parent PixelCNN and the latent projection layer."""
         super().__init__(n_channel, h, discrete_channel)
         self.z_proj = nn.Linear(latent_dim, 2*h)
 
@@ -214,13 +222,15 @@ class ConditionalPixelCNN(PixelCNN):
 
 class PixelCNNAutoencoder(nn.Module):
     """
-    Full autoencoder combining a convolutional Encoder with a ConditionalPixelCNN decoder.
+    Full autoencoder combining a convolutional Encoder
+    with a ConditionalPixelCNN decoder.
 
     The encoder maps an input image to a latent vector z; the decoder
     reconstructs the image autoregressively conditioned on z.
     """
 
     def __init__(self):
+        """Initialise the convolutional encoder and conditional decoder."""
         super().__init__()
         self.encoder = Encoder()
         self.decoder = ConditionalPixelCNN()

@@ -28,13 +28,13 @@ WEIGHTS_FILENAME = "model_weights.pth"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 DATASET_ROOT = "./dataset"
 
-#: CIFAR-10 human-readable class names in label order.
+#: CIFAR-10 human-readable class names.
 CIFAR10_CLASSES = [
     "airplane", "automobile", "bird", "cat", "deer",
     "dog", "frog", "horse", "ship", "truck",
 ]
 
-#: Registry of available autoregressive models with metadata for the UI.
+#: Registry of available autoregressive models.
 MODEL_CONFIGS = {
     "PixelCNN": {
         "class": PixelCNN,
@@ -95,7 +95,7 @@ def instantiate_model(
         return model_class(n_channel=n_channel, h=h, n_block=n_block).to(DEVICE)
     if model_type == "GatedPixelCNN":
         return model_class(
-            in_channels=n_channel, channels=h, n_layers=n_block
+            n_channel=n_channel, h=h, n_block=n_block
         ).to(DEVICE)
     # PixelCNN (default)
     return model_class(n_channel=n_channel, h=h, n_block=n_block).to(DEVICE)
@@ -333,12 +333,6 @@ def sample_images(
                     ).squeeze(-1)
                     generated[:, ch, i, j] = pixel
     return generated
-
-    # Read architecture params saved during training
-    saved = read_config_from_results()
-    dataset  = saved.get("dataset", "CIFAR10")
-    h        = int(saved.get("h", 128))
-    n_block  = int(saved.get("n_block", 15))
 
 def sample_conditional(
     model: torch.nn.Module,
@@ -668,7 +662,8 @@ def _pick_image_index(
     img_key = f"img_idx_{dataset}_{numeric_class}"
     prev_key = f"prev_class_{dataset}"
 
-    if st.session_state.get(prev_key) != numeric_class or img_key not in st.session_state:
+    class_changed = st.session_state.get(prev_key) != numeric_class
+    if class_changed or img_key not in st.session_state:
         st.session_state[img_key] = matching[
             torch.randint(len(matching), (1,)).item()
         ].item()

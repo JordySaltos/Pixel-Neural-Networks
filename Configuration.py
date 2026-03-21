@@ -26,31 +26,6 @@ def get_optimizer(name="Adam"):
     """
     return getattr(torch.optim, name)
 
-
-def str2bool(value):
-    """
-    Convert a string to a boolean.
-
-    Common string representations for True: 'yes', 'true', 't', 'y', '1'  
-    Common string representations for False: 'no', 'false', 'f', 'n', '0'
-
-    Args:
-        value (str): Input string.
-
-    Returns:
-        bool: Converted boolean value.
-
-    Raises:
-        argparse.ArgumentTypeError: If the string cannot be interpreted as a boolean.
-    """
-    value = value.lower()
-    if value in ("yes", "true", "t", "y", "1"):
-        return True
-    if value in ("no", "false", "f", "n", "0"):
-        return False
-    raise argparse.ArgumentTypeError("Boolean value expected.")
-
-
 class BaseConfig(object):
     """
     Base configuration class for experiments.
@@ -70,9 +45,8 @@ class BaseConfig(object):
         parser.add_argument("--mode", type=str, default="train")
 
         # Training parameters
-        parser.add_argument("--batch_size", type=int, default=8)
-        parser.add_argument("--n_epochs", type=int, default=5)
-        parser.add_argument("--optimizer", type=str, default="RMSprop")
+        parser.add_argument("--batch_size", type=int, default=16)
+        parser.add_argument("--n_epochs", type=int, default=60)
 
         # Dataset
         parser.add_argument("--dataset", type=str, default="CIFAR10",
@@ -81,7 +55,7 @@ class BaseConfig(object):
         # Model architecture
         parser.add_argument("--h", type=int, default=128,
                             help="Bottleneck dimension of the PixelCNN")
-        parser.add_argument("--n_block", type=int, default=15,
+        parser.add_argument("--n_block", type=int, default=10,
                             help="Number of residual blocks in the PixelCNN")
         parser.add_argument("--model_type", type=str, default="PixelCNN",
                             choices=["PixelCNN", "PixelRNN", "GatedPixelCNN"],
@@ -90,6 +64,11 @@ class BaseConfig(object):
         # Optimizer
         parser.add_argument("--lr", type=float, default=1e-3,
                             help="Initial learning rate")
+        parser.add_argument(
+            "--optimizer", type=str, default="Adam",
+            choices=["Adam", "AdamW", "RMSprop"],
+            help="Optimiser class",
+        )
 
         # Logging
         parser.add_argument("--log_interval", type=int, default=100)
@@ -169,16 +148,3 @@ class BaseConfig(object):
             str: Pretty-printed configuration dictionary.
         """
         return "Configurations\n" + pprint.pformat(self.__dict__)
-
-
-def get_config(parse=True) -> "BaseConfig":
-    """
-    Convenience factory to create and initialize a BaseConfig instance.
-
-    Args:
-        parse (bool): Whether to parse command-line arguments.
-
-    Returns:
-        BaseConfig: Initialized configuration object.
-    """
-    return BaseConfig().initialize(parse=parse)
