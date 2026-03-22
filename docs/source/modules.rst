@@ -6,9 +6,8 @@ Pixel-Neural-Networks
 
    Configuration
    Loader
-   app
    architecture
-   main
    model
    train
-
+   main
+   app
