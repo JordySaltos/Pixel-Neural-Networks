@@ -16,7 +16,7 @@ Requires::
 import sys
 from pathlib import Path
 
-RESULTS_FOLDER_ID = "1pgce5w-3qzyzj97sQmXuHC3qosv5lCLj?usp=drive_link"
+RESULTS_FOLDER_ID = "1pgce5w-3qzyzj97sQmXuHC3qosv5lCLj"
 RESULTS_DIR = Path("results")
 
 
