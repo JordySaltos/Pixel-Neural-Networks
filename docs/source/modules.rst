@@ -8,7 +8,10 @@ Pixel-Neural-Networks
    Loader
    app
    architecture
+   dl
    main
    model
+   plotly_events
    train
-
+   utils
+   viz

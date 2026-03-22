@@ -1,8 +1,6 @@
 """The main module of the app.
 
-Contains most of the functions governing the
-different app modes.
-
+Contains most of the functions governing the different app modes.
 """
 
 from pathlib import Path
@@ -67,37 +65,31 @@ MODEL_CONFIGS = {
 def instantiate_model(
     model_type: str, n_channel: int, h: int, n_block: int
 ) -> torch.nn.Module:
-    """Instantiate the requested model with the given architecture parameters.
+    """
+    Instantiate the requested model with the given architecture parameters.
 
-    Each model class has a slightly different constructor signature; this
-    function centralises that dispatch so callers never repeat the if/elif
-    chain.
+    Each model class shares the same constructor signature
+    (n_channel, h, n_block), so this function centralises the dispatch
+    so callers never repeat the if/elif chain.
 
     Args:
-        model_type: One of "PixelCNN", "PixelRNN", or "GatedPixelCNN".
-        n_channel: Number of input/output image channels.
-        h: Bottleneck / channel dimension.
-        n_block: Number of residual or gated blocks.
+        model_type (str): One of ``"PixelCNN"``, ``"PixelRNN"``,
+            or ``"GatedPixelCNN"``.
+        n_channel (int): Number of input/output image channels.
+        h (int): Bottleneck / channel dimension.
+        n_block (int): Number of residual or gated blocks.
 
     Returns:
-        An un-trained nn.Module placed on DEVICE.
+        torch.nn.Module: An un-trained model placed on ``DEVICE``.
 
     Raises:
-        ValueError: If model_type is not in MODEL_CONFIGS.
+        ValueError: If ``model_type`` is not in ``MODEL_CONFIGS``.
     """
     if model_type not in MODEL_CONFIGS:
         raise ValueError(
             f"Unknown model '{model_type}'. Choose from {list(MODEL_CONFIGS)}."
         )
     model_class = MODEL_CONFIGS[model_type]["class"]
-
-    if model_type == "PixelRNN":
-        return model_class(n_channel=n_channel, h=h, n_block=n_block).to(DEVICE)
-    if model_type == "GatedPixelCNN":
-        return model_class(
-            in_channels=n_channel, channels=h, n_layers=n_block
-        ).to(DEVICE)
-    # PixelCNN (default)
     return model_class(n_channel=n_channel, h=h, n_block=n_block).to(DEVICE)
 
 
@@ -109,17 +101,18 @@ def load_model(
     n_block: int,
     model_type: str = "PixelCNN",
 ) -> torch.nn.Module:
-    """Load a trained model from disk and cache it across Streamlit reruns.
+    """
+    Load a trained model from disk and cache it across Streamlit reruns.
 
     Args:
-        weights_path: Path to the ``.pth`` weights file.
-        dataset: Dataset name used during training (e.g. "CIFAR10").
-        h: Bottleneck dimension stored in the checkpoint config.
-        n_block: Number of blocks stored in the checkpoint config.
-        model_type: Architecture name stored in the checkpoint config.
+        weights_path (str): Path to the ``.pth`` weights file.
+        dataset (str): Dataset name used during training (e.g. ``"CIFAR10"``).
+        h (int): Bottleneck dimension stored in the checkpoint config.
+        n_block (int): Number of blocks stored in the checkpoint config.
+        model_type (str): Architecture name stored in the checkpoint config.
 
     Returns:
-        The model in eval mode, placed on DEVICE.
+        torch.nn.Module: The model in eval mode, placed on ``DEVICE``.
     """
     n_channel = get_dataset_config(dataset)["n_channel"]
     model = instantiate_model(model_type, n_channel, h, n_block)
@@ -134,12 +127,16 @@ def load_model(
 
 
 def list_result_folders() -> list:
-    """Return all result folders that contain a weights file, newest first.
+    """
+    Return all result folders that contain a weights file, newest first.
 
     Sorted by the timestamp embedded at the end of the folder name
     (``YYYY-MM-DD_HH-MM-SS``), so the order is purely chronological and
-    unaffected by the model or dataset prefix.  Falls back to filesystem
+    unaffected by the model or dataset prefix. Falls back to filesystem
     modification time if the name does not contain a parseable timestamp.
+
+    Returns:
+        list: List of Path objects for valid result folders.
     """
     if not RESULTS_DIR.exists():
         return []
@@ -163,10 +160,17 @@ def list_result_folders() -> list:
 
 
 def find_sample_images(folder: Path) -> list:
-    """Return ``epoch-*.png`` checkpoint images from *folder*, sorted by epoch number.
+    """
+    Return ``epoch-*.png`` checkpoint images from *folder*, sorted by epoch number.
 
     Uses numeric sort (epoch-10 comes after epoch-9) instead of the default
     lexicographic sort which would incorrectly place epoch-10 before epoch-9.
+
+    Args:
+        folder (Path): Path to the checkpoint directory.
+
+    Returns:
+        list: List of Path objects sorted by epoch number.
     """
     return sorted(
         folder.glob("epoch-*.png"),
@@ -175,10 +179,15 @@ def find_sample_images(folder: Path) -> list:
 
 
 def read_config_from_folder(folder: Path) -> dict:
-    """Parse the ``config.txt`` saved alongside a training run.
+    """
+    Parse the ``config.txt`` saved alongside a training run.
 
-    Returns a dict with keys ``dataset``, ``h``, ``n_block``, and
-    ``model_type`` (whichever are present in the file).
+    Args:
+        folder (Path): Path to the checkpoint directory.
+
+    Returns:
+        dict: Dictionary with keys ``dataset``, ``h``, ``n_block``, and
+            ``model_type`` (whichever are present in the file).
     """
     config_file = folder / "config.txt"
     if not config_file.exists():
@@ -191,14 +200,16 @@ def read_config_from_folder(folder: Path) -> dict:
     return params
 
 
-def pick_run_folder(widget_key: str) -> Path | None:
-    """Render a selectbox for the user to choose a saved run.
+def pick_run_folder(widget_key: str) -> "Path | None":
+    """
+    Render a selectbox for the user to choose a saved run.
 
     Args:
-        widget_key: Unique Streamlit widget key (use the page name).
+        widget_key (str): Unique Streamlit widget key (use the page name).
 
     Returns:
-        The selected folder as a ``Path``, or ``None`` if no runs exist.
+        Path | None: The selected folder as a ``Path``, or ``None`` if
+            no runs exist.
     """
     folders = list_result_folders()
     if not folders:
@@ -214,19 +225,20 @@ def pick_run_folder(widget_key: str) -> Path | None:
 
 
 def load_run(widget_key: str) -> tuple:
-    """Pick a run folder, read its config, and load the model.
+    """
+    Pick a run folder, read its config, and load the model.
 
-    Combines pick_run_folder + read_config_from_folder + load_model into a
-    single call shared by show_generation() and show_completion().
+    Combines ``pick_run_folder`` + ``read_config_from_folder`` + ``load_model``
+    into a single call shared by all page functions.
 
     Args:
-        widget_key: Forwarded to pick_run_folder as a unique widget key.
+        widget_key (str): Forwarded to ``pick_run_folder`` as a unique widget key.
 
     Returns:
-        ``(model, dataset, saved_config, folder)`` on success, or
-        ``(None, None, None, None)`` when no runs are available.
-        The folder is returned so callers can access checkpoint images
-        without spawning a second selectbox widget.
+        tuple: ``(model, dataset, saved_config, folder)`` on success, or
+            ``(None, None, None, None)`` when no runs are available.
+            The folder is returned so callers can access checkpoint images
+            without spawning a second selectbox widget.
     """
     folder = pick_run_folder(widget_key)
     if folder is None:
@@ -257,14 +269,15 @@ def load_run(widget_key: str) -> tuple:
 
 
 def tensor_to_numpy_grid(images: torch.Tensor, n_cols: int = 4) -> np.ndarray:
-    """Convert a batch of image tensors to a numpy grid ready for imshow.
+    """
+    Convert a batch of image tensors to a numpy grid ready for imshow.
 
     Args:
-        images: Float tensor of shape ``(N, C, H, W)`` in [0, 1].
-        n_cols: Number of columns in the output grid.
+        images (torch.Tensor): Float tensor of shape (B, C, H, W) in [0, 1].
+        n_cols (int): Number of columns in the output grid.
 
     Returns:
-        Array of shape ``(H', W')`` for greyscale or ``(H', W', 3)`` for RGB.
+        np.ndarray: Array of shape (H', W') for greyscale or (H', W', 3) for RGB.
     """
     grid = make_grid(images.cpu(), nrow=n_cols, normalize=True, pad_value=1)
     npimg = grid.numpy().transpose(1, 2, 0)
@@ -276,18 +289,20 @@ def tensor_to_numpy_grid(images: torch.Tensor, n_cols: int = 4) -> np.ndarray:
 def show_image_grid(
     images: torch.Tensor,
     title: str,
-    cmap: str | None,
+    cmap: "str | None",
     figsize: tuple,
     n_cols: int = 4,
 ) -> None:
-    """Render a batch of tensors as a matplotlib grid inside Streamlit.
+    """
+    Render a batch of tensors as a matplotlib grid inside Streamlit.
 
     Args:
-        images: Float tensor of shape ``(N, C, H, W)`` in [0, 1].
-        title: Figure title displayed above the grid.
-        cmap: Matplotlib colormap (``"gray"`` for MNIST, ``None`` for RGB).
-        figsize: ``(width, height)`` in inches.
-        n_cols: Number of columns in the image grid.
+        images (torch.Tensor): Float tensor of shape (B, C, H, W) in [0, 1].
+        title (str): Figure title displayed above the grid.
+        cmap (str | None): Matplotlib colormap (``"gray"`` for MNIST,
+            ``None`` for RGB).
+        figsize (tuple): ``(width, height)`` in inches.
+        n_cols (int): Number of columns in the image grid.
     """
     npimg = tensor_to_numpy_grid(images, n_cols)
     fig, ax = plt.subplots(figsize=figsize)
@@ -307,15 +322,16 @@ def show_image_grid(
 def sample_images(
     model: torch.nn.Module, dataset: str, n_images: int
 ) -> torch.Tensor:
-    """Generate images unconditionally, pixel by pixel.
+    """
+    Generate images unconditionally, pixel by pixel.
 
     Args:
-        model: A trained autoregressive model in eval mode.
-        dataset: Dataset name, used to retrieve image dimensions.
-        n_images: Number of images to generate.
+        model (torch.nn.Module): A trained autoregressive model in eval mode.
+        dataset (str): Dataset name, used to retrieve image dimensions.
+        n_images (int): Number of images to generate.
 
     Returns:
-        Float tensor of shape ``(n_images, C, H, W)`` in [0, 1].
+        torch.Tensor: Float tensor of shape (n_images, C, H, W) in [0, 1].
     """
     ds_cfg = get_dataset_config(dataset)
     n_channel = ds_cfg["n_channel"]
@@ -334,11 +350,6 @@ def sample_images(
                     generated[:, ch, i, j] = pixel
     return generated
 
-    # Read architecture params saved during training
-    saved = read_config_from_results()
-    dataset  = saved.get("dataset", "CIFAR10")
-    h        = int(saved.get("h", 128))
-    n_block  = int(saved.get("n_block", 15))
 
 def sample_conditional(
     model: torch.nn.Module,
@@ -346,16 +357,18 @@ def sample_conditional(
     real_image: torch.Tensor,
     n_completions: int,
 ) -> torch.Tensor:
-    """Complete the bottom half of an image from the top half context.
+    """
+    Complete the bottom half of an image from the top half context.
 
     Args:
-        model: A trained autoregressive model in eval mode.
-        dataset: Dataset name, used to retrieve image dimensions.
-        real_image: Single image tensor of shape ``(1, C, H, W)`` in [0, 1].
-        n_completions: Number of independent completions to generate.
+        model (torch.nn.Module): A trained autoregressive model in eval mode.
+        dataset (str): Dataset name, used to retrieve image dimensions.
+        real_image (torch.Tensor): Single image tensor of shape
+            (1, C, H, W) in [0, 1].
+        n_completions (int): Number of independent completions to generate.
 
     Returns:
-        Float tensor of shape ``(n_completions, C, H, W)`` in [0, 1].
+        torch.Tensor: Float tensor of shape (n_completions, C, H, W) in [0, 1].
     """
     ds_cfg = get_dataset_config(dataset)
     n_channel = ds_cfg["n_channel"]
@@ -384,14 +397,15 @@ def sample_conditional(
 
 
 def _build_data_loaders(dataset: str, batch_size: int) -> tuple:
-    """Create train and test DataLoaders for the chosen dataset.
+    """
+    Create train and test DataLoaders for the chosen dataset.
 
     Args:
-        dataset: Dataset name (e.g. "CIFAR10" or "MNIST").
-        batch_size: Number of images per mini-batch.
+        dataset (str): Dataset name (e.g. ``"CIFAR10"`` or ``"MNIST"``).
+        batch_size (int): Number of images per mini-batch.
 
     Returns:
-        A ``(train_loader, test_loader)`` tuple.
+        tuple: A ``(train_loader, test_loader)`` tuple.
     """
     train_loader = get_loader(
         DATASET_ROOT, batch_size, train=True, dataset_name=dataset
@@ -410,15 +424,16 @@ def _run_epoch(
     progress_bar: st.delta_generator.DeltaGenerator,
     loss_placeholder: st.delta_generator.DeltaGenerator,
 ) -> None:
-    """Execute one training epoch and update the Streamlit progress widgets.
+    """
+    Execute one training epoch and update the Streamlit progress widgets.
 
     Args:
-        solver: Initialised Solver with model, optimizer, and criterion.
-        train_loader: DataLoader for the training split.
-        epoch: Current epoch number (1-indexed).
-        n_epochs: Total number of epochs (used for the progress bar fraction).
-        progress_bar: Streamlit progress widget to update.
-        loss_placeholder: Streamlit empty widget for live loss display.
+        solver (Solver): Initialised Solver with model, optimizer, and criterion.
+        train_loader (DataLoader): DataLoader for the training split.
+        epoch (int): Current epoch number (1-indexed).
+        n_epochs (int): Total number of epochs (used for the progress bar fraction).
+        progress_bar (DeltaGenerator): Streamlit progress widget to update.
+        loss_placeholder (DeltaGenerator): Streamlit empty widget for live loss display.
     """
     solver.model.train()
     batch_losses = []
@@ -448,11 +463,12 @@ def _run_epoch(
 
 
 def _plot_losses(train_losses: list, test_losses: list) -> None:
-    """Plot train and validation loss curves and display them in Streamlit.
+    """
+    Plot train and validation loss curves and display them in Streamlit.
 
     Args:
-        train_losses: Mean training loss per epoch.
-        test_losses: Mean validation loss per epoch.
+        train_losses (list): Mean training loss per epoch.
+        test_losses (list): Mean validation loss per epoch.
     """
     epochs = list(range(1, len(train_losses) + 1))
     fig, ax = plt.subplots(figsize=(7, 3))
@@ -477,16 +493,17 @@ def run_training(
     model_type: str,
     lr: float,
 ) -> None:
-    """Configure, build, and run a full training session from the Streamlit UI.
+    """
+    Configure, build, and run a full training session from the Streamlit UI.
 
     Args:
-        dataset: Dataset name ("CIFAR10" or "MNIST").
-        n_epochs: Number of training epochs.
-        batch_size: Mini-batch size.
-        h: Bottleneck / channel dimension.
-        n_block: Number of residual / gated blocks.
-        model_type: Architecture name (key in MODEL_CONFIGS).
-        lr: Initial Adam learning rate.
+        dataset (str): Dataset name (``"CIFAR10"`` or ``"MNIST"``).
+        n_epochs (int): Number of training epochs.
+        batch_size (int): Mini-batch size.
+        h (int): Bottleneck / channel dimension.
+        n_block (int): Number of residual / gated blocks.
+        model_type (str): Architecture name (key in ``MODEL_CONFIGS``).
+        lr (float): Initial learning rate.
     """
     config = BaseConfig().initialize(
         parse=False,
@@ -520,7 +537,7 @@ def run_training(
     if n_epochs > 0:
         solver.sample(1)
 
-    progress_bar = st.progress(0, text="Starting training…")
+    progress_bar = st.progress(0, text="Starting training...")
     loss_placeholder = st.empty()
 
     for epoch in range(1, n_epochs + 1):
@@ -540,14 +557,15 @@ def run_training(
 
 
 def _load_real_samples(dataset: str, n_images: int) -> torch.Tensor:
-    """Load *n_images* real test-set images, cached in session_state.
+    """
+    Load *n_images* real test-set images, cached in session_state.
 
     Args:
-        dataset: Dataset name used to select the loader.
-        n_images: Number of images to fetch.
+        dataset (str): Dataset name used to select the loader.
+        n_images (int): Number of images to fetch.
 
     Returns:
-        Float tensor of shape ``(n_images, C, H, W)`` in [0, 1].
+        torch.Tensor: Float tensor of shape (n_images, C, H, W) in [0, 1].
     """
     cache_key = f"real_samples_{dataset}_{n_images}"
     if cache_key not in st.session_state:
@@ -560,7 +578,8 @@ def _load_real_samples(dataset: str, n_images: int) -> torch.Tensor:
 
 
 def show_generation() -> None:
-    """Render the Image Generation page.
+    """
+    Render the Image Generation page.
 
     Displays checkpoint samples from the selected training run and lets the
     user generate new images side-by-side with real dataset examples.
@@ -592,14 +611,14 @@ def show_generation() -> None:
 
         real_imgs = _load_real_samples(dataset, n_images)
         with col_real:
-            st.caption("Real images — dataset")
+            st.caption("Real images - dataset")
             show_image_grid(real_imgs, dataset, cmap, (4, fh))
 
-        with st.spinner("Sampling pixel-by-pixel… this can take a while"):
+        with st.spinner("Sampling pixel-by-pixel... this can take a while"):
             generated = sample_images(model, dataset, n_images)
 
         with col_gen:
-            st.caption("Generated images — model")
+            st.caption("Generated images - model")
             show_image_grid(generated, "model output", cmap, (4, fh))
 
 
@@ -609,13 +628,14 @@ def show_generation() -> None:
 
 
 def _load_test_dataset(dataset: str) -> tuple:
-    """Load the full test set into memory, cached in session_state.
+    """
+    Load the full test set into memory, cached in session_state.
 
     Args:
-        dataset: Dataset name.
+        dataset (str): Dataset name.
 
     Returns:
-        A ``(images, labels)`` tuple of tensors.
+        tuple: A ``(images, labels)`` tuple of tensors.
     """
     cache_key = f"test_images_{dataset}"
     if cache_key not in st.session_state:
@@ -630,22 +650,23 @@ def _load_test_dataset(dataset: str) -> tuple:
 def _pick_image_index(
     dataset: str, test_labels: torch.Tensor, n_test: int
 ) -> tuple:
-    """Render a class selector and return a stable (img_idx, class_label) pair.
+    """
+    Render a class selector and return a stable (img_idx, class_label) pair.
 
     The index is persisted in ``st.session_state`` so it does not change
     when unrelated widgets trigger a Streamlit rerun. It only changes when
     the class selector value changes or the user clicks "Pick another image".
 
     Args:
-        dataset: Controls which selector widget is shown (digit vs class).
-        test_labels: Label tensor for the test set.
-        n_test: Total number of test images (used for the random fallback).
+        dataset (str): Controls which selector widget is shown (digit vs class).
+        test_labels (torch.Tensor): Label tensor for the test set.
+        n_test (int): Total number of test images (used for the random fallback).
 
     Returns:
-        A ``(img_idx, class_label)`` tuple.
+        tuple: A ``(img_idx, class_label)`` tuple.
     """
     if dataset == "MNIST":
-        chosen = st.selectbox("Select a digit (0–9)", list(range(10)))
+        chosen = st.selectbox("Select a digit (0-9)", list(range(10)))
         class_label = str(chosen)
         numeric_class = int(chosen)
         matching = (test_labels == chosen).nonzero(as_tuple=True)[0]
@@ -684,7 +705,8 @@ def _pick_image_index(
 
 
 def show_completion() -> None:
-    """Render the Image Completion page.
+    """
+    Render the Image Completion page.
 
     The user picks a real test-set image; the model completes the masked
     bottom half pixel by pixel.
@@ -726,7 +748,7 @@ def show_completion() -> None:
     )
 
     if st.button("Autocomplete bottom half", type="primary"):
-        with st.spinner("Generating pixel by pixel… this may take a while"):
+        with st.spinner("Generating pixel by pixel... this may take a while"):
             completions = sample_conditional(
                 model, dataset, real_image, n_completions
             )
@@ -750,15 +772,144 @@ def show_completion() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Page: Camera Completion
+# ---------------------------------------------------------------------------
+
+
+def _preprocess_camera_image(img_array: np.ndarray) -> torch.Tensor:
+    """
+    Convert a raw camera numpy array to a 32x32 CIFAR-style tensor.
+
+    Drops the alpha channel if present (RGBA -> RGB), resizes to 32x32
+    using Lanczos interpolation, and normalizes to [0, 1].
+
+    Args:
+        img_array (np.ndarray): uint8 array of shape (H, W, 3) or (H, W, 4).
+
+    Returns:
+        torch.Tensor: Float tensor of shape (1, 3, 32, 32) in [0, 1].
+    """
+    from PIL import Image as PILImage
+
+    if img_array.shape[2] == 4:
+        img_array = img_array[:, :, :3]
+
+    pil_img = PILImage.fromarray(img_array.astype(np.uint8))
+    pil_img = pil_img.resize((32, 32), PILImage.LANCZOS)
+    arr = np.array(pil_img).astype(np.float32) / 255.0           # (32, 32, 3)
+    tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0)  # (1, 3, 32, 32)
+    return tensor
+
+
+def _show_pixel_grid(tensor: torch.Tensor, title: str, zoom: int = 8) -> None:
+    """
+    Display a 32x32 tensor as a zoomed pixel grid in Streamlit.
+
+    Args:
+        tensor (torch.Tensor): Float tensor of shape (1, 3, 32, 32) in [0, 1].
+        title (str): Caption displayed below the image.
+        zoom (int): Upscale factor for display (default 8, shown as 256x256).
+    """
+    from PIL import Image as PILImage
+
+    arr = tensor.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    arr = np.clip(arr * 255, 0, 255).astype(np.uint8)
+    pil_img = PILImage.fromarray(arr).resize(
+        (32 * zoom, 32 * zoom), PILImage.NEAREST
+    )
+    st.image(pil_img, caption=title, use_container_width=False)
+
+
+def show_camera_completion() -> None:
+    """
+    Render the Camera Completion page.
+
+    The user takes a photo with their webcam. The app resizes it to 32x32,
+    erases the bottom half, and uses the trained CIFAR-10 model to
+    autocomplete the missing pixels.
+    """
+    st.write(
+        "Take a photo with your webcam. It will be resized to **32x32 pixels** "
+        "(CIFAR-10 format). The bottom half will be erased and the model will "
+        "complete it pixel by pixel."
+    )
+
+    model, dataset, _, _folder = load_run("camera")
+    if model is None:
+        return
+
+    if dataset != "CIFAR10":
+        st.warning(
+            f"The selected run was trained on **{dataset}**. "
+            "Camera completion works best with a **CIFAR10** model (3-channel RGB)."
+        )
+
+    st.subheader("Step 1 - Take a photo")
+    camera_image = st.camera_input("Click the button to capture")
+
+    if camera_image is None:
+        st.info("Waiting for a photo...")
+        return
+
+    from PIL import Image as PILImage
+    import io
+    pil_raw = PILImage.open(io.BytesIO(camera_image.getvalue())).convert("RGB")
+    img_array = np.array(pil_raw)
+
+    st.subheader("Step 2 - Image at 32x32 pixels")
+    img_tensor = _preprocess_camera_image(img_array)   # (1, 3, 32, 32)
+
+    half = 16
+    masked = img_tensor.clone()
+    masked[:, :, half:, :] = 0.0
+
+    col_orig, col_masked = st.columns(2)
+    with col_orig:
+        _show_pixel_grid(img_tensor, "Original resized to 32x32")
+    with col_masked:
+        _show_pixel_grid(masked, "Bottom half erased (model input)")
+
+    st.subheader("Step 3 - Model autocomplete")
+    n_completions = st.slider("Number of variations", 1, 6, 3, key="cam_completions")
+
+    if st.button("Autocomplete bottom half", type="primary", key="cam_run"):
+        img_tensor = img_tensor.to(DEVICE)
+
+        with st.spinner("Generating pixel by pixel... this may take a while"):
+            completions = sample_conditional(
+                model, dataset, img_tensor, n_completions
+            )  # (n_completions, 3, 32, 32)
+
+        st.success("Done! Here are the completions:")
+
+        cols = st.columns(2 + n_completions)
+
+        with cols[0]:
+            _show_pixel_grid(masked, "Masked input")
+
+        for k in range(n_completions):
+            with cols[k + 1]:
+                _show_pixel_grid(
+                    completions[k: k + 1].cpu(),
+                    f"Completion {k + 1}",
+                )
+
+        with cols[-1]:
+            _show_pixel_grid(img_tensor.cpu(), "Original")
+
+
+# ---------------------------------------------------------------------------
 # Sidebar and page routing
 # ---------------------------------------------------------------------------
 
 
 def _sidebar() -> str:
-    """Render the sidebar and return the selected mode name.
+    """
+    Render the sidebar and return the selected mode name.
 
     Returns:
-        One of "Train model", "Image Generation", or "Image Completion".
+        str: One of ``"Train model"``, ``"Image Generation"``,
+            ``"Image Completion"``, or ``"Camera Completion"``.
     """
     with st.sidebar:
         st.title("Pixel Neural Networks")
@@ -766,7 +917,12 @@ def _sidebar() -> str:
         st.divider()
         mode = st.radio(
             "Mode",
-            ["Train model", "Image Generation", "Image Completion"],
+            [
+                "Train model",
+                "Image Generation",
+                "Image Completion",
+                "Camera Completion",
+            ],
             label_visibility="collapsed",
         )
         st.divider()
@@ -783,7 +939,7 @@ def _page_train() -> None:
     with col1:
         dataset = st.selectbox("Dataset", list(DATASET_CONFIGS.keys()))
     with col2:
-        n_epochs = st.slider("Epochs", 1, 150, 5)
+        n_epochs = st.slider("Epochs", 1, 150, 20)
     with col3:
         batch_size = st.selectbox("Batch size", [8, 16, 32, 64, 128], index=2)
 
@@ -798,7 +954,7 @@ def _page_train() -> None:
     col4, col5 = st.columns(2)
     with col4:
         h = st.slider(
-            "h — channel dimension",
+            "h - channel dimension",
             16,
             256,
             128,
@@ -810,7 +966,7 @@ def _page_train() -> None:
         )
     with col5:
         n_block = st.slider(
-            "n_block — depth",
+            "n_block - depth",
             4,
             20,
             10,
@@ -830,7 +986,7 @@ def _page_train() -> None:
     ds_cfg = get_dataset_config(dataset)
     st.caption(
         f"Channels: {ds_cfg['n_channel']} | "
-        f"Image size: {ds_cfg['img_size']}×{ds_cfg['img_size']}"
+        f"Image size: {ds_cfg['img_size']}x{ds_cfg['img_size']}"
     )
 
     if st.button("Start training", type="primary", use_container_width=True):
@@ -846,7 +1002,6 @@ def main() -> None:
     """Configure the Streamlit page and dispatch to the selected mode."""
     st.set_page_config(
         page_title="Pixel Neural Networks",
-        page_icon="🎨",
         layout="wide",
     )
     mode = _sidebar()
@@ -859,6 +1014,9 @@ def main() -> None:
     elif mode == "Image Completion":
         st.header("Image Completion")
         show_completion()
+    elif mode == "Camera Completion":
+        st.header("Camera Completion")
+        show_camera_completion()
 
 
 if __name__ == "__main__":

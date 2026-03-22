@@ -12,11 +12,8 @@ DATASET_CONFIGS = {
     },
     "MNIST": {
         "n_channel": 1,
-        "img_size": 32,   # padded from 28 to 32 so the model works identically
-        "transform": transforms.Compose([
-            transforms.Pad(2),          # 28x28 → 32x32
-            transforms.ToTensor(),
-        ]),
+        "img_size": 28,
+        "transform": transforms.Compose([transforms.ToTensor()]),
         "loader": datasets.MNIST,
     },
 }
@@ -48,12 +45,12 @@ def get_loader(directory="./dataset",
     Raises:
         ValueError: If dataset_name is not supported.
     """
-    import os
     from pathlib import Path
 
     if dataset_name not in DATASET_CONFIGS:
         raise ValueError(
-            f"Unknown dataset '{dataset_name}'. Choose from {list(DATASET_CONFIGS.keys())}."
+            f"Unknown dataset '{dataset_name}'. "
+            f"Choose from {list(DATASET_CONFIGS.keys())}."
         )
 
     cfg = DATASET_CONFIGS[dataset_name]
