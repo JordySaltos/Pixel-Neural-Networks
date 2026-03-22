@@ -6,12 +6,8 @@ Pixel-Neural-Networks
 
    Configuration
    Loader
-   app
    architecture
-   dl
-   main
    model
-   plotly_events
    train
-   utils
-   viz
+   main
+   app
