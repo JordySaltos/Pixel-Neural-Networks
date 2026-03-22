@@ -8,10 +8,7 @@ import torch
 project_dir = Path(".").resolve()
 
 datasets_dir = project_dir / "dataset"
-datasets_dir.mkdir(exist_ok=True)
-
-results_dir = project_dir / "results"
-results_dir.mkdir(exist_ok=True)
+results_dir  = project_dir / "results"
 
 
 def get_optimizer(name="Adam"):
@@ -45,8 +42,8 @@ class BaseConfig(object):
         parser.add_argument("--mode", type=str, default="train")
 
         # Training parameters
-        parser.add_argument("--batch_size", type=int, default=16)
-        parser.add_argument("--n_epochs", type=int, default=60)
+        parser.add_argument("--batch_size", type=int, default=64)
+        parser.add_argument("--n_epochs", type=int, default=40)
 
         # Dataset
         parser.add_argument("--dataset", type=str, default="CIFAR10",
@@ -108,6 +105,9 @@ class BaseConfig(object):
             if key == "optimizer":
                 value = get_optimizer(value)
             setattr(self, key, value)
+
+        datasets_dir.mkdir(exist_ok=True)
+        results_dir.mkdir(exist_ok=True)
 
         self.isTrain = self.mode == "train"
         self.dataset_dir = datasets_dir / self.dataset

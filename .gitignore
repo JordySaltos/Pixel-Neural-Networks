@@ -1,32 +1,33 @@
+# OS 
 .DS_Store
+Thumbs.db
 
-# venv.md Quarto document
-venv_files
-venv.html
-
-# Code environnement
-.vscode
-.idea
+# IDEs 
+.vscode/
+.idea/
+*.code-workspace
 
 # Python
-**/__pycache__
-sandbox.py
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
 
-# Jupyter Notebooks
-.ipynb_checkpoints
-**/*.ipynb
+# Virtual environments 
+.venv/
+venv/
+env/
 
-# Large files
-*.png
+# Datasets 
+dataset/
 
-# Data files
-dataset
-results
-Old_results
-
-# *.csv
-*.parquet
-yolov3*
+# Training results 
+results/
+Old_results/
+Saved_Models/
 
 # Documentation
 build

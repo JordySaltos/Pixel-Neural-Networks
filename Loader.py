@@ -9,15 +9,22 @@ DATASET_CONFIGS = {
         "img_size": 32,
         "transform": transforms.Compose([transforms.ToTensor()]),
         "loader": datasets.CIFAR10,
+        "grad_clip": 1.0,
+        "lr_patience": 5,
+        "lr_factor": 0.5,
+        "lr_min": 1e-6,
+        "default_lr": 1e-3,
     },
     "MNIST": {
         "n_channel": 1,
-        "img_size": 32,   # padded from 28 to 32 so the model works identically
-        "transform": transforms.Compose([
-            transforms.Pad(2),          # 28x28 → 32x32
-            transforms.ToTensor(),
-        ]),
+        "img_size": 28,
+        "transform": transforms.Compose([transforms.ToTensor()]),
         "loader": datasets.MNIST,
+        "grad_clip": 0.5,
+        "lr_patience": 2,
+        "lr_factor": 0.5,
+        "lr_min": 1e-6,
+        "default_lr": 1e-4,
     },
 }
 
@@ -26,7 +33,7 @@ def get_loader(directory="./dataset",
                batch_size=128,
                train=True,
                dataset_name="CIFAR10",
-               num_workers=0,
+               num_workers=2,
                pin_memory=True):
     """
     Create a PyTorch DataLoader for a given dataset.
@@ -37,10 +44,9 @@ def get_loader(directory="./dataset",
         batch_size (int): Number of images per batch.
         train (bool): Whether to load the training split (True) or test split (False).
         dataset_name (str): Name of the dataset to load ("CIFAR10" or "MNIST").
-        num_workers (int): Number of subprocesses to use for data loading.
-            Defaults to 0 (useful for Windows).
+        num_workers (int): Number of subprocesses for data loading.
         pin_memory (bool): If True, the data loader will copy tensors into CUDA
-            pinned memory before returning them. Useful when training on GPU.
+            pinned memory before returning them.
 
     Returns:
         DataLoader: PyTorch DataLoader for the specified dataset.
@@ -48,7 +54,6 @@ def get_loader(directory="./dataset",
     Raises:
         ValueError: If dataset_name is not supported.
     """
-    import os
     from pathlib import Path
 
     if dataset_name not in DATASET_CONFIGS:
@@ -76,6 +81,7 @@ def get_loader(directory="./dataset",
         shuffle=train,
         num_workers=num_workers,
         pin_memory=pin_memory,
+        persistent_workers=num_workers > 0,
     )
 
     return loader
