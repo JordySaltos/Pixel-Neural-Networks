@@ -9,7 +9,7 @@ All arguments are parsed by :class:`Configuration.BaseConfig`.
 """
 
 from Configuration import BaseConfig
-from train import Solver, build_data_loaders
+from train import Solver, GatedSolver, SOLVER_REGISTRY, build_data_loaders
 
 
 def run_training(config, train_loader, test_loader):
@@ -24,7 +24,11 @@ def run_training(config, train_loader, test_loader):
     Returns:
         Solver: The trained Solver instance.
     """
-    solver = Solver(config, train_loader=train_loader, test_loader=test_loader)
+    solver_class = SOLVER_REGISTRY.get(
+        getattr(config, "model_type", "PixelCNN"), "Solver"
+    )
+    solver_class = GatedSolver if solver_class == "GatedSolver" else Solver
+    solver = solver_class(config, train_loader=train_loader, test_loader=test_loader)
     print(config)
     print(f"Model type: {getattr(config, 'model_type', 'PixelCNN')}")
     solver.build()

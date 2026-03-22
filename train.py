@@ -16,6 +16,12 @@ MODEL_REGISTRY = {
     "GatedPixelCNN": GatedPixelCNN,
 }
 
+SOLVER_REGISTRY = {
+    "PixelCNN":      "Solver",
+    "PixelRNN":      "Solver",
+    "GatedPixelCNN": "GatedSolver",
+}
+
 
 def sample_pixels(
     model: nn.Module,
@@ -103,7 +109,6 @@ class Solver(object):
             config: BaseConfig instance with training hyper-parameters.
             train_loader: DataLoader for training data.
             test_loader: DataLoader for validation/test data.
-            
         """
         self.config = config
         self.train_loader = train_loader
@@ -319,3 +324,119 @@ class Solver(object):
 
         save_image(canvas, image_path)
         return image_path
+
+
+class GatedSolver(Solver):
+    """
+    Specialised solver for GatedPixelCNN on CIFAR-10.
+
+    """
+
+    SAMPLING_TEMPERATURE: float = 1.5
+    WARMUP_STEPS: int = 100
+
+    def build(self, model_override=None):
+        """
+        Build the GatedPixelCNN model and set up the optimizer with warmup.
+
+        Args:
+            model_override (nn.Module, optional): External model instance to use
+                instead of building one from config. Defaults to None.
+        """
+        super().build(model_override=model_override)
+
+        if self.config.mode == "train":
+            lr = getattr(self.config, "lr", 1e-3)
+            ds_cfg = get_dataset_config(self.config.dataset)
+            self.grad_clip = ds_cfg["grad_clip"]
+            self.optimizer = self.config.optimizer(
+                self.model.parameters(),
+                lr=lr,
+                weight_decay=1e-5,
+            )
+            self.criterion = nn.CrossEntropyLoss()
+
+            total_steps = self.config.n_epochs * self.num_batches_per_epoch
+
+            def _lr_lambda(step: int) -> float:
+                """Linear warmup then ReduceLROnPlateau-compatible constant."""
+                if step < self.WARMUP_STEPS:
+                    return step / max(1, self.WARMUP_STEPS)
+                return 1.0
+
+            self.warmup_scheduler = torch.optim.lr_scheduler.LambdaLR(
+                self.optimizer, lr_lambda=_lr_lambda
+            )
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer,
+                mode="min",
+                factor=ds_cfg["lr_factor"],
+                patience=ds_cfg["lr_patience"],
+                min_lr=ds_cfg["lr_min"],
+            )
+            self._global_step = 0
+
+    def train(self):
+        """
+        Run the GatedPixelCNN training loop.
+
+        """
+        sample_interval = getattr(self.config, "sample_interval", 3)
+
+        for epoch in trange(self.config.n_epochs, desc="Epoch", ncols=80):
+            epoch += 1
+
+            self.model.train()
+            total_loss = 0.0
+            total_samples = 0
+
+            for batch_index, (images, labels) in enumerate(
+                tqdm(self.train_loader, desc="Batch", ncols=80, leave=False)
+            ):
+                batch_index += 1
+                n = images.size(0)
+                images = images.to(self.device)
+                logits = self.model(images)
+                logits = logits.reshape(-1, 256)               
+                targets = (images * 255).long().view(-1)        
+
+                loss = self.criterion(logits, targets)
+
+                self.optimizer.zero_grad()
+                loss.backward()
+                clip_grad_norm_(self.model.parameters(), max_norm=self.grad_clip)
+                self.optimizer.step()
+
+                if self._global_step < self.WARMUP_STEPS:
+                    self.warmup_scheduler.step()
+                self._global_step += 1
+
+                loss_value = float(loss.detach())
+                total_loss += loss_value * n
+                total_samples += n
+
+                if batch_index > 1 and batch_index % self.config.log_interval == 0:
+                    tqdm.write(
+                        f"Epoch: {epoch} | "
+                        f"Batch: ({batch_index}/{self.num_batches_per_epoch})"
+                        f" | Loss: {loss_value:.3f}"
+                    )
+
+            epoch_loss = total_loss / total_samples
+            self.train_losses.append(epoch_loss)
+            tqdm.write(f"Epoch Loss: {epoch_loss:.2f}")
+
+            test_loss = self.test(epoch)
+            self.test_losses.append(test_loss)
+            if self._global_step >= self.WARMUP_STEPS:
+                self.scheduler.step(test_loss)
+            current_lr = self.optimizer.param_groups[0]["lr"]
+            tqdm.write(f"LR: {current_lr:.2e}")
+
+            if epoch % sample_interval == 0 or epoch == self.config.n_epochs:
+                self.config.sampling_temperature = self.SAMPLING_TEMPERATURE
+                self.sample(epoch)
+
+        weights_path = str(self.config.ckpt_dir / "model_weights.pth")
+        torch.save(self.model.state_dict(), weights_path)
+        tqdm.write(f"Model saved to {weights_path}")

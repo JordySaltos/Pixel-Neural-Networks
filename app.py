@@ -17,7 +17,7 @@ from torchvision.utils import make_grid
 from Configuration import BaseConfig
 from Loader import DATASET_CONFIGS, get_dataset_config, get_loader
 from model import GatedPixelCNN, PixelCNN, PixelRNN
-from train import Solver, sample_pixels, build_data_loaders
+from train import Solver, GatedSolver, SOLVER_REGISTRY, sample_pixels, build_data_loaders
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -489,7 +489,9 @@ def run_training(
     n_channel = get_dataset_config(dataset)["n_channel"]
     solver_model = instantiate_model(model_type, n_channel, h, n_block)
 
-    solver = Solver(config, train_loader, test_loader)
+    solver_class = SOLVER_REGISTRY.get(model_type, "Solver")
+    solver_class = GatedSolver if solver_class == "GatedSolver" else Solver
+    solver = solver_class(config, train_loader, test_loader)
     solver.build(model_override=solver_model)
 
     progress_bar = st.progress(0, text="Starting training...")
@@ -808,7 +810,7 @@ def show_camera_completion() -> None:
     img_array = np.array(pil_raw)
 
     st.subheader("Step 2 - Image at 32x32 pixels")
-    img_tensor = _preprocess_camera_image(img_array)   
+    img_tensor = _preprocess_camera_image(img_array)   # (1, 3, 32, 32)
 
     half = 16
     masked = img_tensor.clone()
