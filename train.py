@@ -148,7 +148,7 @@ class Solver(object):
         for imgs, _ in self.test_loader:
             total_bytes += imgs.numel() * imgs.element_size()
             if total_bytes > _MAX_CACHE_BYTES:
-                all_images = None   
+                all_images = None  
                 break
             all_images.append(imgs)
 
@@ -264,7 +264,7 @@ class Solver(object):
 
         ds_cfg = get_dataset_config(self.config.dataset)
         n_channel = ds_cfg["n_channel"]
-        eval_batch = 128  
+        eval_batch = 128    
 
         with torch.no_grad():
             if self.test_cache is not None:
@@ -328,12 +328,13 @@ class Solver(object):
 
 class GatedSolver(Solver):
     """
-    Specialised solver for GatedPixelCNN on CIFAR-10.
+    Specialised solver for GatedPixelCNN.
 
     """
 
     SAMPLING_TEMPERATURE: float = 1.5
-    WARMUP_STEPS: int = 100
+    WARMUP_STEPS: int = 500
+    MIN_PLATEAU_LOSS: float = 4.0
 
     def build(self, model_override=None):
         """
@@ -356,10 +357,8 @@ class GatedSolver(Solver):
             )
             self.criterion = nn.CrossEntropyLoss()
 
-            total_steps = self.config.n_epochs * self.num_batches_per_epoch
-
             def _lr_lambda(step: int) -> float:
-                """Linear warmup then ReduceLROnPlateau-compatible constant."""
+                """Linear warmup: lr rises from 0 to target over WARMUP_STEPS."""
                 if step < self.WARMUP_STEPS:
                     return step / max(1, self.WARMUP_STEPS)
                 return 1.0
@@ -397,8 +396,8 @@ class GatedSolver(Solver):
                 n = images.size(0)
                 images = images.to(self.device)
                 logits = self.model(images)
-                logits = logits.reshape(-1, 256)               
-                targets = (images * 255).long().view(-1)        
+                logits = logits.reshape(-1, 256)                 # (B*C*H*W, 256)
+                targets = (images * 255).long().view(-1)         # (B*C*H*W,)
 
                 loss = self.criterion(logits, targets)
 
@@ -428,7 +427,7 @@ class GatedSolver(Solver):
 
             test_loss = self.test(epoch)
             self.test_losses.append(test_loss)
-            if self._global_step >= self.WARMUP_STEPS:
+            if self._global_step >= self.WARMUP_STEPS and test_loss < self.MIN_PLATEAU_LOSS:
                 self.scheduler.step(test_loss)
             current_lr = self.optimizer.param_groups[0]["lr"]
             tqdm.write(f"LR: {current_lr:.2e}")

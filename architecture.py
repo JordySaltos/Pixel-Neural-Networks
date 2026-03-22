@@ -330,7 +330,6 @@ class VerticalStack(nn.Module):
         )
         nn.init.kaiming_normal_(self.conv.weight, nonlinearity="linear")
         nn.init.zeros_(self.conv.bias)
-        self.conv.weight.data *= 0.5
 
         self.gate = GatedActivation()
 
@@ -347,7 +346,7 @@ class VerticalStack(nn.Module):
         H = x.shape[2]
         x = F.pad(x, (0, 0, self.pad_top, 0))
         x = self.conv(x)
-        x = x[:, :, :H, :]    
+        x = x[:, :, :H, :]     
         x = self.gate(x)
         return x
 
@@ -375,13 +374,11 @@ class HorizontalStack(nn.Module):
         )
         nn.init.kaiming_normal_(self.conv.weight, nonlinearity="linear")
         nn.init.zeros_(self.conv.bias)
-        self.conv.weight.data *= 0.5
 
         self.gate = GatedActivation()
         self.v_to_h = nn.Conv2d(out_channels, 2 * out_channels, kernel_size=1)
         nn.init.kaiming_normal_(self.v_to_h.weight, nonlinearity="linear")
         nn.init.zeros_(self.v_to_h.bias)
-        self.v_to_h.weight.data *= 0.5
 
         self.residual = nn.Conv2d(out_channels, out_channels, kernel_size=1)
         nn.init.kaiming_normal_(self.residual.weight, nonlinearity="linear")

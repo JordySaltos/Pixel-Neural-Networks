@@ -111,6 +111,19 @@ Both fused via tanh(a) * sigmoid(b) gated activations.
 
 ---
 
+## Documentation
+
+Full API documentation generated with Sphinx from source docstrings.
+
+```bash
+cd docs
+make html        # opens in docs/build/html/index.html
+make latexpdf    # generates a PDF
+make clean       # clear cached build before regenerating
+```
+
+---
+
 ## Training Details
 
 - **Loss**: Cross-Entropy over 256 intensity levels per channel, reported in nats and bits/dim
@@ -181,3 +194,8 @@ The `ConditionalPixelCNN` and `PixelCNNAutoencoder` classes are fully implemente
 - van den Oord, A., Kalchbrenner, N., and Kavukcuoglu, K. *Pixel Recurrent Neural Networks*. ICML 2016. arXiv:1601.06759.
 
 - van den Oord, A., Kalchbrenner, N., Vinyals, O., Espeholt, L., Graves, A., and Kavukcuoglu, K. *Conditional Image Generation with PixelCNN Decoders*. NeurIPS 2016. arXiv:1606.05328.
+
+### Implementation references
+
+- PixelCNN / PixelRNN implementation: https://github.com/j-min/PixelCNN
+- GatedPixelCNN implementation: https://github.com/anordertoreclaim/PixelCNN
