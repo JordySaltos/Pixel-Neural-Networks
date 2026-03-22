@@ -16,10 +16,10 @@ Your prompt will change to `(.venv)` when the environment is active.
 Install project dependencies. Choose the file that matches your setup:
 ```
 # GPU (CUDA 12)
-pip install -r requirements-gpu.txt
+pip install -r requirements_gpu.txt
 
 # CPU only
-pip install -r requirements-cpu.txt
+pip install -r requirements_cpu.txt
 ```
 
 Deactivate when done:
@@ -44,10 +44,10 @@ source .venv/bin/activate
 Install dependencies:
 ```
 # GPU (CUDA 12)
-pip install -r requirements-gpu.txt
+pip install -r requirements_gpu.txt
 
 # CPU only
-pip install -r requirements-cpu.txt
+pip install -r requirements_cpu.txt
 ```
 
 Deactivate when done:
