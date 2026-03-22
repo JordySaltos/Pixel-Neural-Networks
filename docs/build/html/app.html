@@ -1,0 +1,441 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>app module &mdash; Pixel Neural Networks 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="architecture module" href="architecture.html" />
+    <link rel="prev" title="Loader module" href="Loader.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Pixel Neural Networks
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Pixel-Neural-Networks</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">Configuration module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Loader.html">Loader module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">app module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#app.CIFAR10_CLASSES"><code class="docutils literal notranslate"><span class="pre">CIFAR10_CLASSES</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.MODEL_CONFIGS"><code class="docutils literal notranslate"><span class="pre">MODEL_CONFIGS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.find_sample_images"><code class="docutils literal notranslate"><span class="pre">find_sample_images()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.instantiate_model"><code class="docutils literal notranslate"><span class="pre">instantiate_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.list_result_folders"><code class="docutils literal notranslate"><span class="pre">list_result_folders()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.load_model"><code class="docutils literal notranslate"><span class="pre">load_model()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.load_run"><code class="docutils literal notranslate"><span class="pre">load_run()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.pick_run_folder"><code class="docutils literal notranslate"><span class="pre">pick_run_folder()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.read_config_from_folder"><code class="docutils literal notranslate"><span class="pre">read_config_from_folder()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.run_training"><code class="docutils literal notranslate"><span class="pre">run_training()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.sample_conditional"><code class="docutils literal notranslate"><span class="pre">sample_conditional()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.sample_images"><code class="docutils literal notranslate"><span class="pre">sample_images()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.show_camera_completion"><code class="docutils literal notranslate"><span class="pre">show_camera_completion()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.show_completion"><code class="docutils literal notranslate"><span class="pre">show_completion()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.show_generation"><code class="docutils literal notranslate"><span class="pre">show_generation()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.show_image_grid"><code class="docutils literal notranslate"><span class="pre">show_image_grid()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#app.tensor_to_numpy_grid"><code class="docutils literal notranslate"><span class="pre">tensor_to_numpy_grid()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html">architecture module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html">model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train.html">train module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pixel Neural Networks</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Pixel-Neural-Networks</a></li>
+      <li class="breadcrumb-item active">app module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/app.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-app">
+<span id="app-module"></span><h1>app module<a class="headerlink" href="#module-app" title="Link to this heading"></a></h1>
+<p>The main module of the app.</p>
+<p>Contains most of the functions governing the different app modes.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="app.CIFAR10_CLASSES">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">CIFAR10_CLASSES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['airplane',</span> <span class="pre">'automobile',</span> <span class="pre">'bird',</span> <span class="pre">'cat',</span> <span class="pre">'deer',</span> <span class="pre">'dog',</span> <span class="pre">'frog',</span> <span class="pre">'horse',</span> <span class="pre">'ship',</span> <span class="pre">'truck']</span></span><a class="headerlink" href="#app.CIFAR10_CLASSES" title="Link to this definition"></a></dt>
+<dd><p>CIFAR-10 human-readable class names in label order.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="app.MODEL_CONFIGS">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">MODEL_CONFIGS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'GatedPixelCNN':</span> <span class="pre">{'class':</span> <span class="pre">&lt;class</span> <span class="pre">'model.GatedPixelCNN'&gt;,</span> <span class="pre">'description':</span> <span class="pre">'Gated</span> <span class="pre">PixelCNN</span> <span class="pre">with</span> <span class="pre">vertical</span> <span class="pre">+</span> <span class="pre">horizontal</span> <span class="pre">stacks.</span> <span class="pre">Eliminates</span> <span class="pre">the</span> <span class="pre">blind</span> <span class="pre">spot</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">original</span> <span class="pre">PixelCNN.'},</span> <span class="pre">'PixelCNN':</span> <span class="pre">{'class':</span> <span class="pre">&lt;class</span> <span class="pre">'model.PixelCNN'&gt;,</span> <span class="pre">'description':</span> <span class="pre">'Classic</span> <span class="pre">PixelCNN</span> <span class="pre">with</span> <span class="pre">masked</span> <span class="pre">convolutions</span> <span class="pre">and</span> <span class="pre">residual</span> <span class="pre">blocks.</span> <span class="pre">Fast</span> <span class="pre">to</span> <span class="pre">train,</span> <span class="pre">good</span> <span class="pre">baseline.'},</span> <span class="pre">'PixelRNN':</span> <span class="pre">{'class':</span> <span class="pre">&lt;class</span> <span class="pre">'model.PixelRNN'&gt;,</span> <span class="pre">'description':</span> <span class="pre">'PixelRNN</span> <span class="pre">with</span> <span class="pre">Row-LSTM</span> <span class="pre">units.</span> <span class="pre">Captures</span> <span class="pre">long-range</span> <span class="pre">dependencies</span> <span class="pre">better</span> <span class="pre">than</span> <span class="pre">CNN</span> <span class="pre">but</span> <span class="pre">is</span> <span class="pre">significantly</span> <span class="pre">slower.'}}</span></span><a class="headerlink" href="#app.MODEL_CONFIGS" title="Link to this definition"></a></dt>
+<dd><p>Registry of available autoregressive models with metadata for the UI.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.find_sample_images">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">find_sample_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/app.html#find_sample_images"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.find_sample_images" title="Link to this definition"></a></dt>
+<dd><p>Return <code class="docutils literal notranslate"><span class="pre">epoch-*.png</span></code> checkpoint images from <em>folder</em>, sorted by epoch number.</p>
+<p>Uses numeric sort (epoch-10 comes after epoch-9) instead of the default
+lexicographic sort which would incorrectly place epoch-10 before epoch-9.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder</strong> (<em>Path</em>) – Path to the checkpoint directory.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of Path objects sorted by epoch number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.instantiate_model">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">instantiate_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Module</span></span></span><a class="reference internal" href="_modules/app.html#instantiate_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.instantiate_model" title="Link to this definition"></a></dt>
+<dd><p>Instantiate the requested model with the given architecture parameters.</p>
+<p>Each model class shares the same constructor signature
+(n_channel, h, n_block), so this function centralises the dispatch
+so callers never repeat the if/elif chain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_type</strong> (<em>str</em>) – One of <code class="docutils literal notranslate"><span class="pre">&quot;PixelCNN&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;PixelRNN&quot;</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">&quot;GatedPixelCNN&quot;</span></code>.</p></li>
+<li><p><strong>n_channel</strong> (<em>int</em>) – Number of input/output image channels.</p></li>
+<li><p><strong>h</strong> (<em>int</em>) – Bottleneck / channel dimension.</p></li>
+<li><p><strong>n_block</strong> (<em>int</em>) – Number of residual or gated blocks.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An un-trained model placed on <code class="docutils literal notranslate"><span class="pre">DEVICE</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Module</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <code class="docutils literal notranslate"><span class="pre">model_type</span></code> is not in <code class="docutils literal notranslate"><span class="pre">MODEL_CONFIGS</span></code>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.list_result_folders">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">list_result_folders</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span></span></span><a class="reference internal" href="_modules/app.html#list_result_folders"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.list_result_folders" title="Link to this definition"></a></dt>
+<dd><p>Return all result folders that contain a weights file, newest first.</p>
+<p>Sorted by the timestamp embedded at the end of the folder name
+(<code class="docutils literal notranslate"><span class="pre">YYYY-MM-DD_HH-MM-SS</span></code>), so the order is purely chronological and
+unaffected by the model or dataset prefix. Falls back to filesystem
+modification time if the name does not contain a parseable timestamp.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of Path objects for valid result folders.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.load_model">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PixelCNN'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Module</span></span></span><a class="reference internal" href="_modules/app.html#load_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.load_model" title="Link to this definition"></a></dt>
+<dd><p>Load a trained model from disk and cache it across Streamlit reruns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>weights_path</strong> (<em>str</em>) – Path to the <code class="docutils literal notranslate"><span class="pre">.pth</span></code> weights file.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name used during training (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;CIFAR10&quot;</span></code>).</p></li>
+<li><p><strong>h</strong> (<em>int</em>) – Bottleneck dimension stored in the checkpoint config.</p></li>
+<li><p><strong>n_block</strong> (<em>int</em>) – Number of blocks stored in the checkpoint config.</p></li>
+<li><p><strong>model_type</strong> (<em>str</em>) – Architecture name stored in the checkpoint config.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The model in eval mode, placed on <code class="docutils literal notranslate"><span class="pre">DEVICE</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.nn.Module</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.load_run">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">load_run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">widget_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="reference internal" href="_modules/app.html#load_run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.load_run" title="Link to this definition"></a></dt>
+<dd><p>Pick a run folder, read its config, and load the model.</p>
+<p>Combines <code class="docutils literal notranslate"><span class="pre">pick_run_folder</span></code> + <code class="docutils literal notranslate"><span class="pre">read_config_from_folder</span></code> + <code class="docutils literal notranslate"><span class="pre">load_model</span></code>
+into a single call shared by all page functions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>widget_key</strong> (<em>str</em>) – Forwarded to <code class="docutils literal notranslate"><span class="pre">pick_run_folder</span></code> as a unique widget key.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">(model,</span> <span class="pre">dataset,</span> <span class="pre">saved_config,</span> <span class="pre">folder)</span></code> on success, or</dt><dd><p><code class="docutils literal notranslate"><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None,</span> <span class="pre">None)</span></code> when no runs are available.
+The folder is returned so callers can access checkpoint images
+without spawning a second selectbox widget.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.main">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.main" title="Link to this definition"></a></dt>
+<dd><p>Configure the Streamlit page and dispatch to the selected mode.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.pick_run_folder">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">pick_run_folder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">widget_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Path</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#pick_run_folder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.pick_run_folder" title="Link to this definition"></a></dt>
+<dd><p>Render a selectbox for the user to choose a saved run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>widget_key</strong> (<em>str</em>) – Unique Streamlit widget key (use the page name).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The selected folder as a <code class="docutils literal notranslate"><span class="pre">Path</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if</dt><dd><p>no runs exist.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.read_config_from_folder">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">read_config_from_folder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="_modules/app.html#read_config_from_folder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.read_config_from_folder" title="Link to this definition"></a></dt>
+<dd><p>Parse the <code class="docutils literal notranslate"><span class="pre">config.txt</span></code> saved alongside a training run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder</strong> (<em>Path</em>) – Path to the checkpoint directory.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary with keys <code class="docutils literal notranslate"><span class="pre">dataset</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code>, <code class="docutils literal notranslate"><span class="pre">n_block</span></code>, and</dt><dd><p><code class="docutils literal notranslate"><span class="pre">model_type</span></code> (whichever are present in the file).</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.run_training">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">run_training</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_epochs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">h</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_block</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#run_training"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.run_training" title="Link to this definition"></a></dt>
+<dd><p>Configure, build, and run a full training session from the Streamlit UI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name (<code class="docutils literal notranslate"><span class="pre">&quot;CIFAR10&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;MNIST&quot;</span></code>).</p></li>
+<li><p><strong>n_epochs</strong> (<em>int</em>) – Number of training epochs.</p></li>
+<li><p><strong>batch_size</strong> (<em>int</em>) – Mini-batch size.</p></li>
+<li><p><strong>h</strong> (<em>int</em>) – Bottleneck / channel dimension.</p></li>
+<li><p><strong>n_block</strong> (<em>int</em>) – Number of residual / gated blocks.</p></li>
+<li><p><strong>model_type</strong> (<em>str</em>) – Architecture name (key in <code class="docutils literal notranslate"><span class="pre">MODEL_CONFIGS</span></code>).</p></li>
+<li><p><strong>lr</strong> (<em>float</em>) – Initial learning rate.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.sample_conditional">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">sample_conditional</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real_image</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_completions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/app.html#sample_conditional"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.sample_conditional" title="Link to this definition"></a></dt>
+<dd><p>Complete the bottom half of an image from the top half context.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – A trained autoregressive model in eval mode.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name, used to retrieve image dimensions.</p></li>
+<li><p><strong>real_image</strong> (<em>torch.Tensor</em>) – Single image tensor of shape
+(1, C, H, W) in [0, 1].</p></li>
+<li><p><strong>n_completions</strong> (<em>int</em>) – Number of independent completions to generate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Float tensor of shape (n_completions, C, H, W) in [0, 1].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.sample_images">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">sample_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_images</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="reference internal" href="_modules/app.html#sample_images"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.sample_images" title="Link to this definition"></a></dt>
+<dd><p>Generate images unconditionally, pixel by pixel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> (<em>torch.nn.Module</em>) – A trained autoregressive model in eval mode.</p></li>
+<li><p><strong>dataset</strong> (<em>str</em>) – Dataset name, used to retrieve image dimensions.</p></li>
+<li><p><strong>n_images</strong> (<em>int</em>) – Number of images to generate.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Float tensor of shape (n_images, C, H, W) in [0, 1].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.show_camera_completion">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">show_camera_completion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#show_camera_completion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.show_camera_completion" title="Link to this definition"></a></dt>
+<dd><p>Render the Camera Completion page.</p>
+<p>The user takes a photo with their webcam. The app resizes it to 32x32,
+erases the bottom half, and uses the trained CIFAR-10 model to
+autocomplete the missing pixels.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.show_completion">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">show_completion</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#show_completion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.show_completion" title="Link to this definition"></a></dt>
+<dd><p>Render the Image Completion page.</p>
+<p>The user picks a real test-set image; the model completes the masked
+bottom half pixel by pixel.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.show_generation">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">show_generation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#show_generation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.show_generation" title="Link to this definition"></a></dt>
+<dd><p>Render the Image Generation page.</p>
+<p>Displays checkpoint samples from the selected training run and lets the
+user generate new images side-by-side with real dataset examples.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.show_image_grid">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">show_image_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmap</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/app.html#show_image_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.show_image_grid" title="Link to this definition"></a></dt>
+<dd><p>Render a batch of tensors as a matplotlib grid inside Streamlit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>images</strong> (<em>torch.Tensor</em>) – Float tensor of shape (B, C, H, W) in [0, 1].</p></li>
+<li><p><strong>title</strong> (<em>str</em>) – Figure title displayed above the grid.</p></li>
+<li><p><strong>cmap</strong> (<em>str</em><em> | </em><em>None</em>) – Matplotlib colormap (<code class="docutils literal notranslate"><span class="pre">&quot;gray&quot;</span></code> for MNIST,
+<code class="docutils literal notranslate"><span class="pre">None</span></code> for RGB).</p></li>
+<li><p><strong>figsize</strong> (<em>tuple</em>) – <code class="docutils literal notranslate"><span class="pre">(width,</span> <span class="pre">height)</span></code> in inches.</p></li>
+<li><p><strong>n_cols</strong> (<em>int</em>) – Number of columns in the image grid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="app.tensor_to_numpy_grid">
+<span class="sig-prename descclassname"><span class="pre">app.</span></span><span class="sig-name descname"><span class="pre">tensor_to_numpy_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">images</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_cols</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="_modules/app.html#tensor_to_numpy_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#app.tensor_to_numpy_grid" title="Link to this definition"></a></dt>
+<dd><p>Convert a batch of image tensors to a numpy grid ready for imshow.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>images</strong> (<em>torch.Tensor</em>) – Float tensor of shape (B, C, H, W) in [0, 1].</p></li>
+<li><p><strong>n_cols</strong> (<em>int</em>) – Number of columns in the output grid.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Array of shape (H’, W’) for greyscale or (H’, W’, 3) for RGB.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Loader.html" class="btn btn-neutral float-left" title="Loader module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="architecture.html" class="btn btn-neutral float-right" title="architecture module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

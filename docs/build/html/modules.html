@@ -1,0 +1,244 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pixel-Neural-Networks &mdash; Pixel Neural Networks 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Configuration module" href="Configuration.html" />
+    <link rel="prev" title="Pixel Neural Networks - Documentación" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Pixel Neural Networks
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contenidos:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Pixel-Neural-Networks</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html">Configuration module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Loader.html">Loader module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html">architecture module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="model.html">model module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="train.html">train module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html">app module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Pixel Neural Networks</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Pixel-Neural-Networks</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pixel-neural-networks">
+<h1>Pixel-Neural-Networks<a class="headerlink" href="#pixel-neural-networks" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Configuration.html">Configuration module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html#Configuration.BaseConfig"><code class="docutils literal notranslate"><span class="pre">BaseConfig</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Configuration.html#Configuration.BaseConfig.initialize"><code class="docutils literal notranslate"><span class="pre">BaseConfig.initialize()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Configuration.html#Configuration.BaseConfig.parse"><code class="docutils literal notranslate"><span class="pre">BaseConfig.parse()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Configuration.html#Configuration.get_optimizer"><code class="docutils literal notranslate"><span class="pre">get_optimizer()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Loader.html">Loader module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Loader.html#Loader.get_dataset_config"><code class="docutils literal notranslate"><span class="pre">get_dataset_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="Loader.html#Loader.get_loader"><code class="docutils literal notranslate"><span class="pre">get_loader()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="architecture.html">architecture module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.Encoder"><code class="docutils literal notranslate"><span class="pre">Encoder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.Encoder.forward"><code class="docutils literal notranslate"><span class="pre">Encoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.FinalBlock"><code class="docutils literal notranslate"><span class="pre">FinalBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.FinalBlock.forward"><code class="docutils literal notranslate"><span class="pre">FinalBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.FirstBlock"><code class="docutils literal notranslate"><span class="pre">FirstBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.FirstBlock.forward"><code class="docutils literal notranslate"><span class="pre">FirstBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.GatedActivation"><code class="docutils literal notranslate"><span class="pre">GatedActivation</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.GatedActivation.forward"><code class="docutils literal notranslate"><span class="pre">GatedActivation.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.GatedPixelCNNBlock"><code class="docutils literal notranslate"><span class="pre">GatedPixelCNNBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.GatedPixelCNNBlock.forward"><code class="docutils literal notranslate"><span class="pre">GatedPixelCNNBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.HorizontalStack"><code class="docutils literal notranslate"><span class="pre">HorizontalStack</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.HorizontalStack.forward"><code class="docutils literal notranslate"><span class="pre">HorizontalStack.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.MaskedConv"><code class="docutils literal notranslate"><span class="pre">MaskedConv</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.MaskedConv.forward"><code class="docutils literal notranslate"><span class="pre">MaskedConv.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.ResidualBlock"><code class="docutils literal notranslate"><span class="pre">ResidualBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.ResidualBlock.forward"><code class="docutils literal notranslate"><span class="pre">ResidualBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.ResidualRowLSTMBlock"><code class="docutils literal notranslate"><span class="pre">ResidualRowLSTMBlock</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.ResidualRowLSTMBlock.forward"><code class="docutils literal notranslate"><span class="pre">ResidualRowLSTMBlock.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.RowLSTM"><code class="docutils literal notranslate"><span class="pre">RowLSTM</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.RowLSTM.forward"><code class="docutils literal notranslate"><span class="pre">RowLSTM.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="architecture.html#architecture.VerticalStack"><code class="docutils literal notranslate"><span class="pre">VerticalStack</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="architecture.html#architecture.VerticalStack.forward"><code class="docutils literal notranslate"><span class="pre">VerticalStack.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">model module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="model.html#model.ConditionalPixelCNN"><code class="docutils literal notranslate"><span class="pre">ConditionalPixelCNN</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model.html#model.ConditionalPixelCNN.forward"><code class="docutils literal notranslate"><span class="pre">ConditionalPixelCNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#model.GatedPixelCNN"><code class="docutils literal notranslate"><span class="pre">GatedPixelCNN</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model.html#model.GatedPixelCNN.forward"><code class="docutils literal notranslate"><span class="pre">GatedPixelCNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#model.PixelCNN"><code class="docutils literal notranslate"><span class="pre">PixelCNN</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model.html#model.PixelCNN.forward"><code class="docutils literal notranslate"><span class="pre">PixelCNN.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#model.PixelCNNAutoencoder"><code class="docutils literal notranslate"><span class="pre">PixelCNNAutoencoder</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model.html#model.PixelCNNAutoencoder.forward"><code class="docutils literal notranslate"><span class="pre">PixelCNNAutoencoder.forward()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="model.html#model.PixelRNN"><code class="docutils literal notranslate"><span class="pre">PixelRNN</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="model.html#model.PixelRNN.forward"><code class="docutils literal notranslate"><span class="pre">PixelRNN.forward()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">train module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="train.html#train.Solver"><code class="docutils literal notranslate"><span class="pre">Solver</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="train.html#train.Solver.build"><code class="docutils literal notranslate"><span class="pre">Solver.build()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html#train.Solver.sample"><code class="docutils literal notranslate"><span class="pre">Solver.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html#train.Solver.test"><code class="docutils literal notranslate"><span class="pre">Solver.test()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="train.html#train.Solver.train"><code class="docutils literal notranslate"><span class="pre">Solver.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="train.html#train.build_data_loaders"><code class="docutils literal notranslate"><span class="pre">build_data_loaders()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="train.html#train.sample_pixels"><code class="docutils literal notranslate"><span class="pre">sample_pixels()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="main.html">main module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="main.html#main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="main.html#main.run_training"><code class="docutils literal notranslate"><span class="pre">run_training()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="app.html">app module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.CIFAR10_CLASSES"><code class="docutils literal notranslate"><span class="pre">CIFAR10_CLASSES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.MODEL_CONFIGS"><code class="docutils literal notranslate"><span class="pre">MODEL_CONFIGS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.find_sample_images"><code class="docutils literal notranslate"><span class="pre">find_sample_images()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.instantiate_model"><code class="docutils literal notranslate"><span class="pre">instantiate_model()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.list_result_folders"><code class="docutils literal notranslate"><span class="pre">list_result_folders()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.load_model"><code class="docutils literal notranslate"><span class="pre">load_model()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.load_run"><code class="docutils literal notranslate"><span class="pre">load_run()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.pick_run_folder"><code class="docutils literal notranslate"><span class="pre">pick_run_folder()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.read_config_from_folder"><code class="docutils literal notranslate"><span class="pre">read_config_from_folder()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.run_training"><code class="docutils literal notranslate"><span class="pre">run_training()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.sample_conditional"><code class="docutils literal notranslate"><span class="pre">sample_conditional()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.sample_images"><code class="docutils literal notranslate"><span class="pre">sample_images()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.show_camera_completion"><code class="docutils literal notranslate"><span class="pre">show_camera_completion()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.show_completion"><code class="docutils literal notranslate"><span class="pre">show_completion()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.show_generation"><code class="docutils literal notranslate"><span class="pre">show_generation()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.show_image_grid"><code class="docutils literal notranslate"><span class="pre">show_image_grid()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="app.html#app.tensor_to_numpy_grid"><code class="docutils literal notranslate"><span class="pre">tensor_to_numpy_grid()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Pixel Neural Networks - Documentación" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Configuration.html" class="btn btn-neutral float-right" title="Configuration module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright .</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
