@@ -23,7 +23,7 @@ Pixel-Neural-Networks/
 │
 ├── architecture.py        # Building blocks: MaskedConv, ResidualBlock, RowLSTM, GatedPixelCNNBlock...
 ├── model.py               # Full models: PixelCNN, PixelRNN, GatedPixelCNN, ConditionalPixelCNN
-├── train.py               # Solver and GatedSolver: training loop, evaluation and sampling
+├── train.py               # Solver: training loop, evaluation and sampling
 ├── Loader.py              # DataLoaders for CIFAR-10 and MNIST
 ├── Configuration.py       # Hyperparameter configuration via CLI
 ├── main.py                # CLI entry point
@@ -31,7 +31,10 @@ Pixel-Neural-Networks/
 ├── download_weights.py    # Download pre-trained weights from Google Drive
 │
 ├── dataset/               # Automatically downloaded datasets (not versioned)
-└── results/               # Checkpoints and samples generated per run (not versioned)
+├── results/               # Checkpoints and samples generated per run (not versioned)
+└── docs/                  # Sphinx-generated documentation
+    ├── source/            # Configuration and .rst source files
+    └── build/             # Generated HTML output
 ```
 
 ---
