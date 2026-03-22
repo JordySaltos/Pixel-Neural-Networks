@@ -181,7 +181,7 @@ The PixelRNN architecture is fully implemented using Row-LSTM residual blocks, b
 
 During training, GatedPixelCNN consistently converged to a degenerate solution where the model assigned near-certain probability to black pixels (value 0) for every position. This is a known failure mode in autoregressive models trained on datasets where dark pixels are statistically dominant, such as CIFAR-10.
 
-To address this, GatedPixelCNN uses a dedicated `GatedSolver` with three targeted modifications: a linear LR warmup over the first 100 batches to stabilise early gradients, `weight_decay=1e-5` to prevent weights from drifting toward the all-black minimum, and a sampling temperature of 1.5 to flatten the output distribution at generation time so that non-dark pixel values have a meaningful probability of being sampled.
+To address the all-black collapse, GatedPixelCNN uses a dedicated `GatedSolver` with targeted modifications: a linear LR warmup over the first 300 batches, `weight_decay=1e-5`, a guarded `ReduceLROnPlateau` that only activates once the loss drops below 4.0 nats, and a sampling temperature of 1.5. The all-black collapse was resolved, but the model currently converges to a uniform distribution over all 256 pixel values (loss ≈ ln(256) ≈ 5.55 nats), producing random coloured noise instead of structured images. This indicates the model is not learning any pixel dependencies — the gradients are flowing but carrying no signal. 
 
 ### ConditionalPixelCNN and PixelCNNAutoencoder — not trained
 
