@@ -47,10 +47,10 @@ Install dependencies according to your setup:
 
 ```bash
 # GPU (CUDA 12)
-pip install -r requirements-gpu.txt
+pip install -r requirements_gpu.txt
 
 # CPU only
-pip install -r requirements-cpu.txt
+pip install -r requirements_cpu.txt
 ```
 
 ---
@@ -197,5 +197,5 @@ The `ConditionalPixelCNN` and `PixelCNNAutoencoder` classes are fully implemente
 
 ### Implementation references
 
-- PixelCNN / PixelRNN implementation: https://github.com/j-min/PixelCNN
+- PixelCNN implementation: https://github.com/j-min/PixelCNN
 - GatedPixelCNN implementation: https://github.com/anordertoreclaim/PixelCNN
